@@ -1,70 +1,94 @@
-import sounddevice as sd
-import numpy as np
-import wave
+import pygame
 import math
 
-def play_stereo_panned(audio_file_path, angle):
-    """Plays a stereo audio file panned to a specific angle.
+def calculate_pan(angle_degrees):
+    """
+    Calculates the left/right pan values based on an angle.
 
     Args:
-        audio_file_path (str): Path to the stereo audio file.
-        angle (float): Panning angle in degrees (-90 to +90, where -90 is full left,
-                       0 is center, and +90 is full right).
+        angle_degrees: The angle in degrees, where 0 is center,
+                       -90 is hard left, and 90 is hard right.
+
+    Returns:
+        A tuple (left_volume, right_volume) where each value is between 0.0 and 1.0.
     """
-    try:
-        # Open the WAV file
-        with wave.open(audio_file_path, 'rb') as wf:
-            # Extract audio properties
-            num_channels = wf.getnchannels()
-            sample_width = wf.getsampwidth()
-            frame_rate = wf.getframerate()
-            num_frames = wf.getnframes()
 
-            # Read all frames from the WAV file
-            raw_data = wf.readframes(num_frames)
+    # Normalize the angle to be between -1 and 1
+    angle_normalized = angle_degrees / 90.0
 
-        # Convert byte data to integer samples (NumPy array)
-        if sample_width == 1:
-            dtype = np.int8
-        elif sample_width == 2:
-            dtype = np.int16
-        elif sample_width == 4:
-            dtype = np.int32
-        else:
-            raise ValueError("Unsupported sample width")
+    # Calculate left and right volumes.  A simple linear approach:
+    right_volume = max(0, 1 - angle_normalized)  # Right volume increases as angle goes left
+    left_volume = max(0, 1 + angle_normalized)   # Left volume increases as angle goes right
 
-        audio_data = np.frombuffer(raw_data, dtype=dtype)
+    # Ensure volumes are within the valid range (0.0 to 1.0)
+    left_volume = min(1.0, left_volume)
+    right_volume = min(1.0, right_volume)
 
-        # Reshape to stereo
-        audio_data = audio_data.reshape(-1, num_channels)
-
-        # Convert to float32 and normalize
-        audio_data = audio_data.astype(np.float32) / np.iinfo(dtype).max
-
-        # Calculate panning gains
-        angle_rad = angle * (math.pi / 180)
-        left_gain = math.cos(angle_rad)
-        right_gain = math.sin(angle_rad)
-
-        # Apply panning
-        audio_data[:, 0] *= left_gain   # Left channel
-        audio_data[:, 1] *= right_gain  # Right channel
-
-        # Play the audio using sounddevice
-        sd.play(audio_data, samplerate=frame_rate)
-        sd.wait()  # Wait until playback is finished
-
-        print(f"Stereo audio played panned at {angle} degrees.")
-
-    except FileNotFoundError:
-        print(f"Error: Audio file not found at {audio_file_path}")
-    except ValueError as e:
-        print(f"Error: {e}")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+    return (left_volume, right_volume)
 
 
-# Example usage:
-audio_file = "440.wav"  # Replace with your audio file path
-panning_angle = 45  # Ahead and to the left
-play_stereo_panned(audio_file, panning_angle)
+
+# Initialize Pygame
+pygame.init()
+
+# --- Audio Setup ---
+pygame.mixer.init()  # Initialize the mixer
+
+# Load a sound file (replace 'your_sound.wav' with the actual path to your audio file)
+try:
+    sound = pygame.mixer.Sound('440.wav')
+except pygame.error as e:
+    print(f"Error loading sound: {e}")
+    pygame.quit()
+    exit()
+
+# --- Screen Setup (for controlling the angle with the mouse) ---
+screen_width = 800
+screen_height = 600
+screen = pygame.display.set_mode((screen_width, screen_height))
+pygame.display.set_caption("3D Audio Demo")
+
+# Create two channels for left and right
+left_channel = pygame.mixer.Channel(0)
+right_channel = pygame.mixer.Channel(1)
+
+# Load sound into both channels
+left_channel.play(sound)
+right_channel.play(sound)
+
+# Set volumes separately
+left_channel.set_volume(0.1)
+right_channel.set_volume(0.5)
+
+# --- Game Loop ---
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    # Get mouse position and calculate angle
+    mouse_x, mouse_y = pygame.mouse.get_pos()
+    center_x = screen_width // 2
+    angle_radians = math.atan2(mouse_y - screen_height // 2, mouse_x - center_x) # corrected height calculation for atan2
+    angle_degrees = math.degrees(angle_radians)
+
+    # Calculate pan values
+    left_volume, right_volume = calculate_pan(angle_degrees)
+
+    # Set volumes separately
+    left_channel.set_volume(left_volume)
+    right_channel.set_volume(right_volume)
+
+    # Play the sound (if it's not already playing)
+    if not pygame.mixer.get_busy():
+        left_channel.play()
+        right_channel.play()
+
+    # Clear the screen and update the display (optional, just for visual feedback)
+    screen.fill((0, 0, 0))  # Black background
+    pygame.display.flip()
+
+# Quit Pygame
+pygame.quit()
+
