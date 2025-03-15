@@ -7,3 +7,5 @@ gradio==4.29.0
 opencv-python
 torch
 torchvision
+google-genai
+python-dotenv
