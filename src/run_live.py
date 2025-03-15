@@ -22,6 +22,7 @@ CLEAR_CACHE_RATE = 50
 FRAME_LIMIT = 50
 CONF_THRESHOLD = 0.6
 N_CLOSEST_OBJECTS = 1
+RESIZE_FACTOR = 0.25
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Depth Anything V2')
@@ -74,7 +75,7 @@ if __name__ == '__main__':
             print('No frame')
             continue
 
-        raw_image = cv2.resize(raw_image, (0, 0), fx=0.5, fy=0.5)
+        raw_image = cv2.resize(raw_image, (0, 0), fx=RESIZE_FACTOR, fy=RESIZE_FACTOR)
         
         if DEVICE == 'mps':
             torch.mps.synchronize()
@@ -144,7 +145,7 @@ if __name__ == '__main__':
             object_depth = depth[y1:y2, x1:x2]
             avg_depths.append(np.mean(object_depth))
 
-        # find the 5 smallest depth values
+        # find the N smallest depth values
         closest_depths = np.sort(avg_depths)[:min(N_CLOSEST_OBJECTS, len(avg_depths))]
         # get the indices of the closest depths
         closest_indices = np.argsort(avg_depths)[:min(N_CLOSEST_OBJECTS, len(avg_depths))]
@@ -173,6 +174,8 @@ if __name__ == '__main__':
                 'coords': (x, y, z)
             })
 
+        print(closest_objects)
+
         # Apply colormap to normalized depth
         depth = (cmap(depth)[:, :, :3] * 255)[:, :, ::-1].astype(np.uint8)
 
@@ -189,8 +192,8 @@ if __name__ == '__main__':
     cap.release()
     cv2.destroyAllWindows()
 
-    # # create a plot of the fps array
-    # plt.plot(fps_array)
-    # plt.show()
+    # create a plot of the fps array
+    plt.plot(fps_array)
+    plt.show()
 
     print("Average FPS: ", sum(fps_array) / len(fps_array))
