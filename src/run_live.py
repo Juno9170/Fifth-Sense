@@ -14,15 +14,24 @@ from extract_depths_base import extract_depths
 from extract_objects import extract_objects
 from depth_anything.dpt import DepthAnythingV2
 
+import sys
+sys.path.append('../Gemini')
+from imgsearch import analyze_image_with_gemini
+
 DEVICE = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
-
 CAMERA_FOV = 70
-
-CLEAR_CACHE_RATE = 2001
-FRAME_LIMIT = 2000
+CLEAR_CACHE_RATE = 10000000000
+FRAME_LIMIT = 20000000
 CONF_THRESHOLD = 0.6
 N_CLOSEST_OBJECTS = 3
 RESIZE_FACTOR = 1
+YOLO_MODEL_NAME = 'yolo11s.pt'
+GEMINI_THROTTLE = 8 #8s
+
+import socket
+
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Depth Anything V2')
     
@@ -52,6 +61,20 @@ if __name__ == '__main__':
 
     cmap = matplotlib.colormaps.get_cmap('Spectral_r')
 
+    s = socket.socket()
+    print ("Socket successfully created")
+
+    port = 12346
+
+    s.bind(('0.0.0.0', port))
+    print ("socket binded to %s" %(port))
+
+    s.listen(5)	 
+    print ("socket is listening")
+
+    c, addr = s.accept()
+    print ('Got connection from', addr )
+
     
     cap = cv2.VideoCapture(1)
 
@@ -59,9 +82,16 @@ if __name__ == '__main__':
 
     frame_count = 0
 
-    yolo_model = YOLO("yolo11s.pt")
+    yolo_model = YOLO(YOLO_MODEL_NAME, verbose=False)
+
+    clear = lambda: os.system('cls')
+    cooldown = time.time()
 
     while cap.isOpened():
+        
+        c, addr = s.accept()
+
+        mode = c.recv(1024).decode()
         start_time = time.time()
 
         frame_count += 1
@@ -97,7 +127,7 @@ if __name__ == '__main__':
         depth = (cmap(depth)[:, :, :3] * 255)[:, :, ::-1].astype(np.uint8)
 
         # extract objects
-        # Perform object detection on the frame
+        # Perform object detection on the frame    
         results = yolo_model(raw_image)
 
         boxes_array = []
@@ -176,7 +206,13 @@ if __name__ == '__main__':
                 'coords': (x, y, z)
             })
 
-        print(closest_objects)
+        #print(closest_objects)
+        #print(mode)
+        if mode.count("0") == 1:
+            if (mode[0] == '0' and time.time() - cooldown > GEMINI_THROTTLE):
+                cooldown = time.time()
+                output = analyze_image_with_gemini(raw_image, "Can you describe what it feels like to be in this image? Speak like you are currently talking to a blind friend next to you, dont use Imagine the-. Describe briefly where things are located be as consice and objective as possible dont make a list just a couple sentences.")
+                print(output)
 
         # Apply colormap to normalized depth
 
@@ -186,21 +222,21 @@ if __name__ == '__main__':
             break
         
         end_time = time.time()
-
+        '''
         fps = 1 / (end_time - start_time)
         fps_array.append(fps)
-        '''
+        
         if DEVICE == "mps":
             print(f'FPS: {fps:6.2f} | Driver Mem: {torch.mps.driver_allocated_memory()/1000/1000:6.2f}MB | Current Mem: {torch.mps.current_allocated_memory()/1000/1000:6.2f}MB')
         elif DEVICE == "cuda":
             print(f'FPS: {fps:6.2f} | Driver Mem: {torch.cuda.driver_allocated_memory()/1000/1000:6.2f}MB | Current Mem: {torch.cuda.current_allocated_memory()/1000/1000:6.2f}MB')
         '''
-        print(f'FPS: {fps:6.2f}')
+        #print(f'FPS: {fps:6.2f}')
     cap.release()
     cv2.destroyAllWindows()
 
     # create a plot of the fps array
-    plt.plot(fps_array)
-    plt.show()
+    #plt.plot(fps_array)
+    #plt.show()
 
-    print("Average FPS: ", sum(fps_array) / len(fps_array))
+    #print("Average FPS: ", sum(fps_array) / len(fps_array))
