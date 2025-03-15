@@ -18,12 +18,11 @@ DEVICE = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is
 
 CAMERA_FOV = 70
 
-CLEAR_CACHE_RATE = 50
-FRAME_LIMIT = 50
+CLEAR_CACHE_RATE = 2001
+FRAME_LIMIT = 2000
 CONF_THRESHOLD = 0.6
-N_CLOSEST_OBJECTS = 1
-RESIZE_FACTOR = 0.25
-
+N_CLOSEST_OBJECTS = 3
+RESIZE_FACTOR = 1
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Depth Anything V2')
     
@@ -94,6 +93,9 @@ if __name__ == '__main__':
         # Normalize depth values to 0-1 range before applying colormap
         depth = (depth - depth.min()) / (depth.max() - depth.min())
 
+
+        depth = (cmap(depth)[:, :, :3] * 255)[:, :, ::-1].astype(np.uint8)
+
         # extract objects
         # Perform object detection on the frame
         results = yolo_model(raw_image)
@@ -115,15 +117,15 @@ if __name__ == '__main__':
             text = f"{label}: {conf:.2f}"
 
             # Draw the bounding box on the blank image
-            cv2.rectangle(raw_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.rectangle(depth, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
             # Determine text size & create a filled rectangle as background for readability
             (text_width, text_height), baseline = cv2.getTextSize(
                 text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-            cv2.rectangle(raw_image, (x1, y1 - text_height - baseline),
+            cv2.rectangle(depth, (x1, y1 - text_height - baseline),
                           (x1 + text_width, y1), (0, 255, 0), cv2.FILLED)
             # Put the label text on the image
-            cv2.putText(raw_image, text, (x1, y1 - baseline),
+            cv2.putText(depth, text, (x1, y1 - baseline),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
 
             boxes_array.append([x1, y1, x2, y2])
@@ -177,9 +179,9 @@ if __name__ == '__main__':
         print(closest_objects)
 
         # Apply colormap to normalized depth
-        depth = (cmap(depth)[:, :, :3] * 255)[:, :, ::-1].astype(np.uint8)
 
-        cv2.imshow('Depth', raw_image)
+        cv2.imshow('Depth', depth)
+
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
         
@@ -187,8 +189,13 @@ if __name__ == '__main__':
 
         fps = 1 / (end_time - start_time)
         fps_array.append(fps)
-        print(f'FPS: {fps:6.2f} | Driver Mem: {torch.mps.driver_allocated_memory()/1000/1000:6.2f}MB | Current Mem: {torch.mps.current_allocated_memory()/1000/1000:6.2f}MB')
-
+        '''
+        if DEVICE == "mps":
+            print(f'FPS: {fps:6.2f} | Driver Mem: {torch.mps.driver_allocated_memory()/1000/1000:6.2f}MB | Current Mem: {torch.mps.current_allocated_memory()/1000/1000:6.2f}MB')
+        elif DEVICE == "cuda":
+            print(f'FPS: {fps:6.2f} | Driver Mem: {torch.cuda.driver_allocated_memory()/1000/1000:6.2f}MB | Current Mem: {torch.cuda.current_allocated_memory()/1000/1000:6.2f}MB')
+        '''
+        print(f'FPS: {fps:6.2f}')
     cap.release()
     cv2.destroyAllWindows()
 
