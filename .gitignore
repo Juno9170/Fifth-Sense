@@ -26,6 +26,7 @@ env/
 ENV/
 .env
 .venv
+.ryan_venv
 
 # IDE
 .idea/
