@@ -13,17 +13,20 @@ from depth_anything_v2.dpt import DepthAnythingV2
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
 CLEAR_CACHE_RATE = 50
-
+FRAME_LIMIT = 100
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Depth Anything V2')
     
-    parser.add_argument('--img-path', type=str)
+    # parser.add_argument('--img-path', type=str)
     parser.add_argument('--input-size', type=int, default=518)
-    parser.add_argument('--outdir', type=str, default='./vis_depth')
+    parser.add_argument('--outdir', type=str, default='./metric_test_files')
     
     parser.add_argument('--encoder', type=str, default='vitl', choices=['vits', 'vitb', 'vitl', 'vitg'])
+    parser.add_argument('--load-from', type=str, default='checkpoints/depth_anything_v2_metric_hypersim_vits.pth')
+    parser.add_argument('--max-depth', type=float, default=20)
     
-    parser.add_argument('--pred-only', dest='pred_only', action='store_true', help='only display the prediction')
+    parser.add_argument('--save-numpy', dest='save_numpy', action='store_true', help='save the model raw output')
+    # parser.add_argument('--pred-only', dest='pred_only', action='store_true', help='only display the prediction')
     parser.add_argument('--grayscale', dest='grayscale', action='store_true', help='do not apply colorful palette')
     
     args = parser.parse_args()
@@ -37,16 +40,19 @@ if __name__ == '__main__':
         'vitg': {'encoder': 'vitg', 'features': 384, 'out_channels': [1536, 1536, 1536, 1536]}
     }
     
-    depth_anything = DepthAnythingV2(**model_configs[args.encoder])
+    depth_anything = DepthAnythingV2(**{**model_configs[args.encoder], 'max_depth': args.max_depth})
     depth_anything.load_state_dict(torch.load(f'checkpoints/depth_anything_v2_{args.encoder}.pth', map_location='cpu'))
     depth_anything = depth_anything.to(DEVICE).eval()
 
     cmap = matplotlib.colormaps.get_cmap('Spectral_r')
 
     
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
 
     fps_array = []
+    min_distance_array = []
+    max_distance_array = []
+    mean_distance_array = []
 
     frame_count = 0
 
@@ -54,7 +60,7 @@ if __name__ == '__main__':
 
         frame_count += 1
 
-        if len(fps_array) > 750:
+        if len(fps_array) > FRAME_LIMIT:
             break
 
         start_time = time.time()
@@ -64,10 +70,18 @@ if __name__ == '__main__':
             print('No frame')
             continue
 
-        raw_image = cv2.resize(raw_image, (0, 0), fx=0.5, fy=0.5)
+        # raw_image = cv2.resize(raw_image, (0, 0), fx=0.5, fy=0.5)
         
         with torch.no_grad():
             depth = depth_anything.infer_image(raw_image, args.input_size)
+            print(f'Min: {depth.flatten().min():6.2f}m | Max: {depth.flatten().max():6.2f}m')
+
+            min_distance_array.append(depth.flatten().min())
+            max_distance_array.append(depth.flatten().max())
+            mean_distance_array.append(depth.flatten().mean())
+            if args.save_numpy:
+                output_path = os.path.join(args.outdir, str(frame_count) + '_raw_depth_meter.npy')
+                np.save(output_path, depth)
         
         if DEVICE == 'mps':
             torch.mps.synchronize()
@@ -96,11 +110,22 @@ if __name__ == '__main__':
 
         fps = 1 / (end_time - start_time)
         fps_array.append(fps)
-        print(f'FPS: {round(fps, 2):.4f} | Driver Mem: {round(torch.mps.driver_allocated_memory()/1000/1000, 2)}MB | Current Mem: {round(torch.mps.current_allocated_memory()/1000/1000, 2)}MB')
+        # print(f'FPS: {fps:6.2f} | Driver Mem: {torch.mps.driver_allocated_memory()/1000/1000:6.2f}MB | Current Mem: {torch.mps.current_allocated_memory()/1000/1000:6.2f}MB')
 
     cap.release()
     cv2.destroyAllWindows()
 
     # create a plot of the fps array
-    plt.plot(fps_array)
+    # plt.plot(fps_array)
+    # plt.show()
+
+    # plt.plot(min_distance_array)
+    # plt.show()
+
+    # plt.plot(max_distance_array)
+    # plt.show()
+
+    plt.plot(mean_distance_array)
     plt.show()
+
+    print("Average FPS: ", sum(fps_array) / len(fps_array))

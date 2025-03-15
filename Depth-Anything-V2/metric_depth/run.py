@@ -17,7 +17,7 @@ if __name__ == '__main__':
     parser.add_argument('--outdir', type=str, default='./vis_depth')
     
     parser.add_argument('--encoder', type=str, default='vitl', choices=['vits', 'vitb', 'vitl', 'vitg'])
-    parser.add_argument('--load-from', type=str, default='checkpoints/depth_anything_v2_metric_hypersim_vitl.pth')
+    parser.add_argument('--load-from', type=str, default='checkpoints/depth_anything_v2_metric_hypersim_vits.pth')
     parser.add_argument('--max-depth', type=float, default=20)
     
     parser.add_argument('--save-numpy', dest='save_numpy', action='store_true', help='save the model raw output')
