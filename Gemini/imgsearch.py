@@ -1,17 +1,18 @@
 import os
 import requests
 import PIL.Image
+import numpy as np
 from dotenv import load_dotenv
 from google import genai
 
 # Load environment variables
 load_dotenv()
 
-def analyze_image_with_gemini(image_path: str, prompt: str) -> str:
+def analyze_image_with_gemini(image_data: np.ndarray, prompt: str) -> str:
     """Analyzes an image using Google Gemini API and returns the response text.
     
     Args:
-        image_path (str): Path to the image file.
+        image_data (np.ndarray): Raw image data as a NumPy array.
         prompt (str): The text prompt for the AI.
     
     Returns:
@@ -23,8 +24,10 @@ def analyze_image_with_gemini(image_path: str, prompt: str) -> str:
         raise ValueError("GEMINI_KEY is missing. Please set it in the environment variables.")
 
     try:
-        # Open image
-        image = PIL.Image.open(image_path)
+        # Convert numpy ndarray to PIL Image
+        image = PIL.Image.fromarray(image_data)
+
+        print("Done tsts")
 
         # Initialize Gemini client
         client = genai.Client(api_key=GEMINI_KEY)
@@ -37,18 +40,18 @@ def analyze_image_with_gemini(image_path: str, prompt: str) -> str:
 
         return response.text  # Return response instead of printing
 
-    except FileNotFoundError:
-        raise ValueError(f"Image file not found: {image_path}")
     except Exception as e:
         raise RuntimeError(f"Error processing image: {e}")
 
 # Example Usage
 if __name__ == "__main__":
-    image_path = "./test2.jpg"
+    # Example numpy ndarray representing an image
+    image_data = np.random.randint(0, 256, (256, 256, 3), dtype=np.uint8)  # Example random image
+
     prompt = "Can you describe what it feels like to be in this image? Speak like you are currently talking to a blind friend next to you, dont use Imagine the-. Describe briefly where things are located be as consice and objective as possible dont make a list just a couple sentences."
     
     try:
-        result = analyze_image_with_gemini(image_path, prompt)
+        result = analyze_image_with_gemini(image_data, prompt)
         print(result)
     except Exception as e:
         print(f"Error: {e}")
