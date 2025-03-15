@@ -82,6 +82,9 @@ if __name__ == '__main__':
 
         depth = (depth - depth.min()) / (depth.max() - depth.min()) * 255.0
         depth = depth.astype(np.uint8)
+
+        print(depth)
+        exit()
         
         if args.grayscale:
             depth = np.repeat(depth[..., np.newaxis], 3, axis=-1)
