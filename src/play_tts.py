@@ -32,7 +32,7 @@ def synthesize_speech(text, project_id="gen-lang-client-0500175658"):
             },
             "audioConfig": {
                 "audioEncoding": "LINEAR16",
-                "speakingRate": 1.0
+                "speakingRate": 1
             }
         }
 
@@ -70,7 +70,7 @@ def speak(text_to_synthesize):
 
             # Use wave to read the audio data from the decoded bytes
             with wave.open(io.BytesIO(audio_data), "rb") as wf:
-                sample_rate = 44000
+                sample_rate = 22050
                 channels = wf.getnchannels()
                 frames = wf.readframes(wf.getnframes())
                 # Convert audio frames to a numpy array of type int16
