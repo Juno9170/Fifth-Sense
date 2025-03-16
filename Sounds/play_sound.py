@@ -71,6 +71,10 @@ def get_sound(sound_path, angle, elevation, set_index=0, target_fs=48000):
 
     return Stereo3D
 
+def adjust_volume_db(audio, target_db):
+    amplitude_ratio = 10 ** (target_db / 20.0)
+    return audio * amplitude_ratio
+
 fs = 48000
 
 def boop(yaw, pitch, depth, delay=0.5):
@@ -79,21 +83,25 @@ def boop(yaw, pitch, depth, delay=0.5):
     volume = 1/(depth*SOUND_DAMPENING_CONSTANT)
          
     binaural = get_sound("boop.wav", yaw, pitch)
+    # map depth to db reduction
+    # depth is 0-1, so we want to map it to -40 to -100 db
+    db_reduction = np.interp(depth, [0, 1], [-40, -100])
+    binaural = adjust_volume_db(binaural, db_reduction)
     sd.play(binaural, fs)
     time.sleep(delay)
 
 
 if __name__ == "__main__":
 
-    for i in range(5):
-        boop(60, 50, 1)
-        boop(60, 0, 1)
+    # for i in range(5):
+    #     boop(60, 50, 1)
+    #     boop(60, 0, 1)
         
 
-    # for angle in range(0, 360, 45):
-    #     # generate random display
-    #     binaural = get_sound("boop.wav", angle, 0)
+    for angle in range(0, 360, 45):
+        # generate random display
+        binaural = get_sound("boop.wav", angle, 45)
+        binaural = adjust_volume_db(binaural, -40)
 
-    #     sd.play(binaural, fs)
-
-    #     time.sleep(0.5)
+        sd.play(binaural, fs)
+        time.sleep(0.5)

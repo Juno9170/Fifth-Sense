@@ -197,16 +197,9 @@ if __name__ == '__main__':
             x_distance_from_center_in_degrees = x_distance_from_center * deg_per_pixel
             y_distance_from_center_in_degrees = y_distance_from_center * deg_per_pixel
 
-            # x = avg_depths[i] * np.tan(x_distance_from_center_in_degrees)
-            # y = avg_depths[i] * np.tan(y_distance_from_center_in_degrees)
-            # z = avg_depths[i]
-
-            # closest_objects.append({
-            #     'label': labels_array[i],
-            #     'coords': (x, y, z)
-            # })
             closest_objects.append({
                 'label': labels_array[i],
+                'depth': avg_depths[i],
                 'pitch': y_distance_from_center_in_degrees,
                 'yaw': x_distance_from_center_in_degrees
             })
@@ -220,8 +213,6 @@ if __name__ == '__main__':
                 print(output)
             elif (time.time() - cooldown <= GEMINI_THROTTLE):
                 print("GEMINI ON COOLDOWN")
-
-        # Apply colormap to normalized depth
 
         cv2.imshow('Depth', depth)
 
