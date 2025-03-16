@@ -8,6 +8,7 @@ import sounddevice as sd
 import time
 from threading import Lock, Thread
 from collections import deque
+from play_tts import audio_lock  # Import the shared lock
 
 # Keep your original constants
 DB_REDUCTION_MAX = -50
@@ -108,9 +109,12 @@ class AudioSystem:
                     binaural = adjust_volume_db(binaural, db_reduction)
                     
                     try:
-                        sd.play(binaural, blocking=True)
-                    except sd.PortAudioError as e:
-                        print(f"Audio error: {str(e)}")
+                        # Acquire the same lock before playing boops
+                        with audio_lock:
+                            sd.play(binaural, self.fs)
+                            sd.wait()
+                    except Exception as e:
+                        print(f"Error playing sound: {e}")
                         
             except Exception as e:
                 print(f"Audio system error: {str(e)}")
