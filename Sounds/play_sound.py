@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import sys, glob
+import sys
+import glob
 import soundfile as sf
 import sofa
 import librosa
@@ -18,6 +19,8 @@ SOFA = [
 ]
 
 # function to find the closest array value to a given value
+
+
 def find_nearest(array, value):
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
@@ -35,7 +38,7 @@ def get_sound(sound_path, angle, elevation, set_index=0, target_fs=48000):
 
     # need to adjust angle to match CCW convention
     angle_label = angle
-    angle = (360 - angle) % 360 # for edge case, we want 360 to map to 0
+    angle = (360 - angle) % 360  # for edge case, we want 360 to map to 0
 
     [az, az_idx] = find_nearest(positions[:, 0], angle)
     subpositions = positions[np.where(positions[:, 0] == az)]
@@ -45,18 +48,22 @@ def get_sound(sound_path, angle, elevation, set_index=0, target_fs=48000):
     # closest to the HRIR data for the random direction
 
     # get the HRTF data for the left and right ears
-    H[:, 0] = HRTF.Data.IR.get_values(indices={"M": az_idx + sub_idx, "R": 0, "E": 0})
-    H[:, 1] = HRTF.Data.IR.get_values(indices={"M": az_idx + sub_idx, "R": 1, "E": 0})
+    H[:, 0] = HRTF.Data.IR.get_values(
+        indices={"M": az_idx + sub_idx, "R": 0, "E": 0})
+    H[:, 1] = HRTF.Data.IR.get_values(
+        indices={"M": az_idx + sub_idx, "R": 1, "E": 0})
 
     if fs_H != target_fs:
-            H = librosa.core.resample(H.transpose(), orig_sr=fs_H, target_sr=target_fs).transpose()
+        H = librosa.core.resample(
+            H.transpose(), orig_sr=fs_H, target_sr=target_fs).transpose()
 
     # pick random sources
     [x, fs_x] = sf.read(sound_path)
     if x.shape[1] > 1:
         x = np.mean(x, axis=1)
     if fs_x != target_fs:
-        x = librosa.core.resample(x.transpose(), orig_sr=fs_x, target_sr=target_fs).transpose()
+        x = librosa.core.resample(
+            x.transpose(), orig_sr=fs_x, target_sr=target_fs).transpose()
 
     # convolve and add LR signals to final array (general pointwise normalization)
     rend_L = signal.fftconvolve(x, H[:, 0])
@@ -70,9 +77,11 @@ def get_sound(sound_path, angle, elevation, set_index=0, target_fs=48000):
     Stereo3D[0:len(rend_R), 1] += (rend_R / M)
 
     # print operation
-    print("Rendered at azimuth: ", angle_label, "degrees, elevation: ", elev, "degrees")
+    print("Rendered at azimuth: ", angle_label,
+          "degrees, elevation: ", elev, "degrees")
 
     return Stereo3D
+
 
 def adjust_volume_db(audio, target_db):
     amplitude_ratio = 10 ** (target_db / 20.0)
@@ -90,19 +99,20 @@ def boop(yaw, pitch, depth, delay=0.5):
     fs = 48000
     SOUND_DAMPENING_CONSTANT = 4*3.14
 
-    volume = 1/(depth**2 *SOUND_DAMPENING_CONSTANT)
-         
+    volume = 1/(depth**2 * SOUND_DAMPENING_CONSTANT)
+
     binaural = get_sound("boop.wav", yaw, pitch)
     # map depth to db reduction
     # depth is 0-1, so we want to map it
-    db_reduction = np.interp(depth, [0, 1], [DB_REDUCTION_MAX, DB_REDUCTION_MIN])
+    db_reduction = np.interp(
+        depth, [0, 1], [DB_REDUCTION_MAX, DB_REDUCTION_MIN])
     binaural = adjust_volume_db(binaural, db_reduction)
     sd.play(binaural, fs)
     time.sleep(delay)
 
 
 if __name__ == "__main__":
-    
+
     for i in range(10):
         boop(60, 50, 1)
         boop(60, 0, 1)
