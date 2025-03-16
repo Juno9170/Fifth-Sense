@@ -15,10 +15,12 @@ c, addr = s.accept()
 print ('Got connection from', addr )
 
 while True:
-    c, addr = s.accept()
+    data = c.recv(1024)
 
-    print(c.recv(1024).decode())
+    if not data:
+        print('Disconnected from', addr)
+        c, addr = s.accept()
+        print ('Reconnected to', addr )
 
-    #c.close()
-
-    #break
+    else:
+        print(data.decode())
