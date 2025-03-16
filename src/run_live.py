@@ -40,6 +40,12 @@ BOOP_THROTTLE = 2
 SOCKET_ENABLED = True
 METRIC = True
 
+GEMINI_PROMPT = """
+You are a tool that is helping a blind person navigate their environment.
+Describe the environment in a concise manner while being specific about the location of objects.
+Think about what the blind person would want to know about the environment.
+"""
+
 if __name__ == '__main__':
 
     # ------------------------------------------------------------
@@ -285,7 +291,7 @@ if __name__ == '__main__':
                 if mode.count("0") == 1:
                     if (mode[0] == '0' and time.time() - cooldown > GEMINI_THROTTLE):
                         cooldown = time.time()
-                        output = analyze_image_with_gemini(raw_image, "Can you describe what it feels like to be in this image? Speak like you are currently talking to a blind friend next to you, dont use Imagine the-. Describe briefly where things are located be as consice and objective as possible dont make a list just a couple sentences.")
+                        output = analyze_image_with_gemini(raw_image, GEMINI_PROMPT)
                         speak(output)
                     elif (time.time() - cooldown <= GEMINI_THROTTLE):
                         print("GEMINI ON COOLDOWN")
