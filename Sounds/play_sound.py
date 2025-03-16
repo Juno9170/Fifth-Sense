@@ -9,8 +9,8 @@ from scipy import signal
 import sounddevice as sd
 import time
 
-DB_REDUCTION_MAX = -35
-DB_REDUCTION_MIN = -6
+DB_REDUCTION_MAX = -50
+DB_REDUCTION_MIN = -20
 
 SOFA = [
     "HRTFsets/SOFA Far-Field/HRIR_FULL2DEG.sofa",

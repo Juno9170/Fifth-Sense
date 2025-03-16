@@ -13,8 +13,11 @@ import threading
 from ultralytics import YOLO
 from extract_depths_base import extract_depths
 from extract_objects import extract_objects
-from depth_anything.dpt import DepthAnythingV2
 from play_sound import boop
+
+from depth_anything_v2.dpt import DepthAnythingV2 as DepthAnythingV2Metric
+from depth_anything.dpt import DepthAnythingV2 as DepthAnythingV2Base
+
 
 import sys
 sys.path.append('../Gemini')
@@ -30,7 +33,8 @@ RESIZE_FACTOR = 1
 YOLO_MODEL_NAME = 'yolo11n.pt'
 GEMINI_THROTTLE = 8 # 8s
 
-socket_enabled = True
+SOCKET_ENABLED = False
+METRIC = True
 
 import socket
 
@@ -48,6 +52,8 @@ if __name__ == '__main__':
     # parser.add_argument('--outdir', type=str, default='./vis_depth')
     
     parser.add_argument('--encoder', type=str, default='vits', choices=['vits', 'vitb', 'vitl', 'vitg'])
+    parser.add_argument('--load-from', type=str, default='checkpoints/depth_anything_v2_metric_hypersim_vits.pth')
+    parser.add_argument('--max-depth', type=float, default=20)
     
     # parser.add_argument('--pred-only', dest='pred_only', action='store_true', help='only display the prediction')
     parser.add_argument('--grayscale', dest='grayscale', action='store_true', help='do not apply colorful palette')
@@ -63,13 +69,19 @@ if __name__ == '__main__':
         'vitg': {'encoder': 'vitg', 'features': 384, 'out_channels': [1536, 1536, 1536, 1536]}
     }
     
-    depth_anything = DepthAnythingV2(**model_configs[args.encoder])
-    depth_anything.load_state_dict(torch.load(f'checkpoints/depth_anything_v2_{args.encoder}.pth', map_location='cpu'))
+    if METRIC:
+        print(f"{args.load_from}")
+        print(f"{model_configs[args.encoder]}")
+        depth_anything = DepthAnythingV2Metric(**{**model_configs[args.encoder], 'max_depth': args.max_depth})
+        depth_anything.load_state_dict(torch.load(args.load_from, map_location='cpu'))
+    else:
+        depth_anything = DepthAnythingV2Base(**model_configs[args.encoder])
+        depth_anything.load_state_dict(torch.load(f'checkpoints/depth_anything_v2_{args.encoder}.pth', map_location='cpu'))
     depth_anything = depth_anything.to(DEVICE).eval()
 
-    cmap = matplotlib.colormaps.get_cmap('Spectral_r')
+    cmap = matplotlib.colormaps.get_cmap('Spectral' if METRIC else 'Spectral_r')
 
-    if socket_enabled:
+    if SOCKET_ENABLED:
 
         s = socket.socket()
         print ("Socket successfully created")
@@ -99,12 +111,9 @@ if __name__ == '__main__':
 
     while cap.isOpened():
 
-        print("Frame count: ", frame_count)
-        
-        if socket_enabled:
-
+        if SOCKET_ENABLED:
             mode = c.recv(1024).decode()
-            print("Mode: ", mode)
+
         start_time = time.time()
 
         frame_count += 1
@@ -136,7 +145,7 @@ if __name__ == '__main__':
         # Normalize depth values to 0-1 range before applying colormap
         depth = (depth - depth.min()) / (depth.max() - depth.min())
 
-
+        depth_values = depth.copy()
         depth = (cmap(depth)[:, :, :3] * 255)[:, :, ::-1].astype(np.uint8)
 
         # extract objects
@@ -164,12 +173,12 @@ if __name__ == '__main__':
 
             # Determine text size & create a filled rectangle as background for readability
             (text_width, text_height), baseline = cv2.getTextSize(
-                text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+                text, cv2.FONT_HERSHEY_SIMPLEX, 1.5, 1)
             cv2.rectangle(depth, (x1, y1 - text_height - baseline),
                           (x1 + text_width, y1), (0, 255, 0), cv2.FILLED)
             # Put the label text on the image
             cv2.putText(depth, text, (x1, y1 - baseline),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+                        cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 0), 2)
 
             boxes_array.append([x1, y1, x2, y2])
             labels_array.append(label)
@@ -187,7 +196,7 @@ if __name__ == '__main__':
         # get the depth values of the objects
         for box in boxes_array:
             x1, y1, x2, y2 = box
-            object_depth = depth[y1:y2, x1:x2]
+            object_depth = depth_values[y1:y2, x1:x2]
             avg_depths.append(np.mean(object_depth))
 
         # find the N smallest depth values
@@ -219,20 +228,19 @@ if __name__ == '__main__':
 
         
         for obj in closest_objects:
-            boop(obj['yaw'], obj['pitch'], obj['depth'])
-            # boop_threaded(obj['yaw'], obj['pitch'], obj['depth'])
+            print("depth: ", obj['depth'])
+            boop(obj['yaw'], obj['pitch'], obj['depth'], 0.1)
 
 
-        #print(closest_objects)
-        #print(mode)
-        if socket_enabled:
+        if SOCKET_ENABLED:
+
             if mode.count("0") == 1:
                 if (mode[0] == '0' and time.time() - cooldown > GEMINI_THROTTLE):
                     cooldown = time.time()
-                output = analyze_image_with_gemini(raw_image, "Can you describe what it feels like to be in this image? Speak like you are currently talking to a blind friend next to you, dont use Imagine the-. Describe briefly where things are located be as consice and objective as possible dont make a list just a couple sentences.")
-                print(output)
-            elif (time.time() - cooldown <= GEMINI_THROTTLE):
-                print("GEMINI ON COOLDOWN")
+                    output = analyze_image_with_gemini(raw_image, "Can you describe what it feels like to be in this image? Speak like you are currently talking to a blind friend next to you, dont use Imagine the-. Describe briefly where things are located be as consice and objective as possible dont make a list just a couple sentences.")
+                    print(output)
+                elif (time.time() - cooldown <= GEMINI_THROTTLE):
+                    print("GEMINI ON COOLDOWN")
 
         cv2.imshow('Depth', depth)
 
