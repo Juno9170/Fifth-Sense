@@ -98,7 +98,7 @@ if __name__ == '__main__':
         print ('Got connection from', addr)
 
     
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
 
     fps_array = []
 
@@ -253,6 +253,14 @@ if __name__ == '__main__':
                 'yaw': x_distance_from_center_in_degrees
             })
 
+        # if len(closest_objects) == 0:
+        #     closest_objects.append({
+        #         'label': 'No objects detected',
+        #         'depth': 0,
+        #         'pitch': 0,
+        #         'yaw': 0
+        #     })
+
         for obj in closest_objects[:N_CLOSEST_OBJECTS]:
             if not muted:
                 audio_system.add_sound(  # Call directly without threading
@@ -271,14 +279,13 @@ if __name__ == '__main__':
         # GEMINI
         # ------------------------------------------------------------
         # print("Analyzing image with Gemini...")
-        print(muted)
 
         if SOCKET_ENABLED:
-            print(mode)
             if mode.count("0") == 1:
                 if (mode[0] == '0' and time.time() - cooldown > GEMINI_THROTTLE):
                     cooldown = time.time()
                     output = analyze_image_with_gemini(raw_image, "Can you describe what it feels like to be in this image? Speak like you are currently talking to a blind friend next to you, dont use Imagine the-. Describe briefly where things are located be as consice and objective as possible dont make a list just a couple sentences.")
+                    print("Gemini output: ", output)
                     speak(output)
                 elif (time.time() - cooldown <= GEMINI_THROTTLE):
                     print("GEMINI ON COOLDOWN")

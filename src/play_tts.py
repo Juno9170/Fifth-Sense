@@ -6,6 +6,7 @@ import io
 import wave
 import numpy as np
 import sounddevice as sd
+import librosa
 
 
 def synthesize_speech(text, project_id="gen-lang-client-0500175658"):
@@ -32,7 +33,7 @@ def synthesize_speech(text, project_id="gen-lang-client-0500175658"):
             },
             "audioConfig": {
                 "audioEncoding": "LINEAR16",
-                "speakingRate": 1
+                "speakingRate": 0.5
             }
         }
 
@@ -70,18 +71,26 @@ def speak(text_to_synthesize):
 
             # Use wave to read the audio data from the decoded bytes
             with wave.open(io.BytesIO(audio_data), "rb") as wf:
-                sample_rate = 22050
+                sample_rate = wf.getframerate()
+                print("sample rate: ", sample_rate)
+                target_sample_rate = 22050
                 channels = wf.getnchannels()
                 frames = wf.readframes(wf.getnframes())
                 # Convert audio frames to a numpy array of type int16
                 audio_array = np.frombuffer(frames, dtype=np.int16)
+
+                # print("resampling audio")
+
+                # audio_array = librosa.resample(audio_array, orig_sr=sample_rate, target_sr=target_sample_rate)
+                # print("resampled audio")
+                # print("audio array shape: ", audio_array.shape)
                 # Reshape the array if the audio has multiple channels
                 if channels > 1:
                     audio_array = audio_array.reshape(-1, channels)
 
             sd.stop()
             # Play the audio using sounddevice (no extra window opens)
-            sd.play(audio_array, sample_rate)
+            sd.play(audio_array, target_sample_rate)
             sd.wait()  # Wait until audio is finished playing
         else:
             print("No audio content found.")
