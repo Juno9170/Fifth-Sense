@@ -73,19 +73,27 @@ def get_sound(sound_path, angle, elevation, set_index=0, target_fs=48000):
 
 fs = 48000
 
-def pip(yaw,pitch,depth):
+def boop(yaw, pitch, depth, delay=0.5):
     SOUND_DAMPENING_CONSTANT = 4*3.14
 
     volume = 1/(depth*SOUND_DAMPENING_CONSTANT)
          
-    binaural = get_sound("boop.wav", angle, pitch)
+    binaural = get_sound("boop.wav", yaw, pitch)
     sd.play(binaural, fs)
-    time.sleep(0.5)
+    time.sleep(delay)
 
-for angle in range(0, 360, 45):
-    # generate random display
-    binaural = get_sound("boop.wav", angle, 0)
 
-    sd.play(binaural, fs)
+if __name__ == "__main__":
 
-    time.sleep(0.5)
+    for i in range(5):
+        boop(60, 50, 1)
+        boop(60, 0, 1)
+        
+
+    # for angle in range(0, 360, 45):
+    #     # generate random display
+    #     binaural = get_sound("boop.wav", angle, 0)
+
+    #     sd.play(binaural, fs)
+
+    #     time.sleep(0.5)
