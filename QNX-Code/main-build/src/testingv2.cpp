@@ -12,10 +12,10 @@
 using namespace std;
 
 int readGPIO(std::ifstream& file);
-int writeGPIO(int num, std::string value);
+int writeGPIO(std::ofstream file, std::string value);
 int sendMessage(int sock, sockaddr_in serverAddr, std::string message);
 
-int main() {
+int main(int argc, char *argv[]) {
 //
 	//FILE *file = fopen("/dev/gpio/2");
 
@@ -64,6 +64,18 @@ int main() {
     std::cout << "exit" << std::endl;
     file.close();*/
 
+	const char* ipaddr = NULL;
+
+	if (argc > 1) {
+
+		ipaddr = argv[1];
+		std::cout << "IP: " << ipaddr << std::endl;
+
+	} else {
+		ipaddr = "192.168.2.104";
+		std::cout << "Setting default IP: " << ipaddr << std::endl;
+	}
+
 	std::ifstream gpio_1("/dev/gpio/1", std::ios::in);
 	std::ifstream gpio_2("/dev/gpio/2", std::ios::in);
 	std::ifstream gpio_3("/dev/gpio/3", std::ios::in);
@@ -83,7 +95,7 @@ int main() {
 	struct sockaddr_in serverAddr;
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_port = htons(12346);
-	serverAddr.sin_addr.s_addr = inet_addr("192.168.2.99");
+	serverAddr.sin_addr.s_addr = inet_addr("192.168.2.104");
 
     /*if (connect(sock, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
         std::cerr << "Connection failed!" << strerror(errno) << std::endl;
@@ -171,10 +183,10 @@ int readGPIO(std::ifstream& file) {
 /*
  * Doesnt work.
  */
-int writeGPIO(int num, std::string value) {
+int writeGPIO(std::ofstream file, std::string value) {
 
-	std::string gpio_path = "/dev/gpio/" + std::to_string(num);
-	std::ofstream file(gpio_path, std::ios::in);
+	//std::string gpio_path = "/dev/gpio/" + std::to_string(num);
+	//std::ofstream file(gpio_path, std::ios::in);
 
 	if (file.is_open()) {
 
