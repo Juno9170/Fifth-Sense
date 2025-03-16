@@ -8,6 +8,9 @@ from scipy import signal
 import sounddevice as sd
 import time
 
+DB_REDUCTION_MAX = -35
+DB_REDUCTION_MIN = -6
+
 SOFA = [
     "HRTFsets/SOFA Far-Field/HRIR_FULL2DEG.sofa",
     "HRTFsets/SOFA Far-Field/HRIR_L2702.sofa",
@@ -75,33 +78,35 @@ def adjust_volume_db(audio, target_db):
     amplitude_ratio = 10 ** (target_db / 20.0)
     return audio * amplitude_ratio
 
-fs = 48000
 
 def boop(yaw, pitch, depth, delay=0.5):
+    """
+    Play a boop sound at a given yaw, pitch, and depth.
+    yaw: float, in degrees
+    pitch: float, in degrees
+    depth: float, in meters
+    delay: float, in seconds
+    """
+    fs = 48000
     SOUND_DAMPENING_CONSTANT = 4*3.14
 
-    volume = 1/(depth*SOUND_DAMPENING_CONSTANT)
+    volume = 1/(depth**2 *SOUND_DAMPENING_CONSTANT)
          
     binaural = get_sound("boop.wav", yaw, pitch)
     # map depth to db reduction
-    # depth is 0-1, so we want to map it to -40 to -100 db
-    db_reduction = np.interp(depth, [0, 1], [-40, -100])
+    # depth is 0-1, so we want to map it
+    db_reduction = np.interp(depth, [0, 1], [DB_REDUCTION_MAX, DB_REDUCTION_MIN])
     binaural = adjust_volume_db(binaural, db_reduction)
     sd.play(binaural, fs)
     time.sleep(delay)
 
 
 if __name__ == "__main__":
-
-    # for i in range(5):
-    #     boop(60, 50, 1)
-    #     boop(60, 0, 1)
-        
-
-    for angle in range(0, 360, 45):
-        # generate random display
-        binaural = get_sound("boop.wav", angle, 45)
-        binaural = adjust_volume_db(binaural, -40)
-
-        sd.play(binaural, fs)
-        time.sleep(0.5)
+    
+    for i in range(10):
+        boop(60, 50, 1)
+        boop(60, 0, 1)
+        boop(60, -50, 1)
+        boop(60, 50, 0.5)
+        boop(60, 0, 0.5)
+        boop(60, -50, 0.5)

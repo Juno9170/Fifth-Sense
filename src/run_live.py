@@ -8,11 +8,13 @@ import os
 import torch
 import time
 import gc
+import threading
 
 from ultralytics import YOLO
 from extract_depths_base import extract_depths
 from extract_objects import extract_objects
 from depth_anything.dpt import DepthAnythingV2
+from play_sound import boop
 
 import sys
 sys.path.append('../Gemini')
@@ -25,12 +27,18 @@ FRAME_LIMIT = 20000000
 CONF_THRESHOLD = 0.6
 N_CLOSEST_OBJECTS = 3
 RESIZE_FACTOR = 1
-YOLO_MODEL_NAME = 'yolo11s.pt'
-GEMINI_THROTTLE = 8 #8s
+YOLO_MODEL_NAME = 'yolo11n.pt'
+GEMINI_THROTTLE = 8 # 8s
+
+socket_enabled = False
 
 import socket
 
-
+# Modify the boop function to be thread-safe
+def boop_threaded(yaw, pitch, depth, delay=0.5):
+    thread = threading.Thread(target=boop, args=(yaw, pitch, depth, delay))
+    thread.daemon = True  # This ensures the thread will exit when the main program exits
+    thread.start()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Depth Anything V2')
@@ -61,19 +69,21 @@ if __name__ == '__main__':
 
     cmap = matplotlib.colormaps.get_cmap('Spectral_r')
 
-    s = socket.socket()
-    print ("Socket successfully created")
+    if socket_enabled:
 
-    port = 12346
+        s = socket.socket()
+        print ("Socket successfully created")
 
-    s.bind(('0.0.0.0', port))
-    print ("socket binded to %s" %(port))
+        port = 12346
 
-    s.listen(5)	 
-    print ("socket is listening")
+        s.bind(('0.0.0.0', port))
+        print ("socket binded to %s" %(port))
 
-    c, addr = s.accept()
-    print ('Got connection from', addr )
+        s.listen(5)	 
+        print ("socket is listening")
+
+        c, addr = s.accept()
+        print ('Got connection from', addr )
 
     
     cap = cv2.VideoCapture(1)
@@ -89,9 +99,10 @@ if __name__ == '__main__':
 
     while cap.isOpened():
         
-        c, addr = s.accept()
+        if socket_enabled:
+            c, addr = s.accept()
 
-        mode = c.recv(1024).decode()
+            mode = c.recv(1024).decode()
         start_time = time.time()
 
         frame_count += 1
@@ -204,11 +215,17 @@ if __name__ == '__main__':
                 'yaw': x_distance_from_center_in_degrees
             })
 
+        
+        for obj in closest_objects:
+            boop(obj['yaw'], obj['pitch'], obj['depth'])
+            # boop_threaded(obj['yaw'], obj['pitch'], obj['depth'])
+
         #print(closest_objects)
         #print(mode)
-        if mode.count("0") == 1:
-            if (mode[0] == '0' and time.time() - cooldown > GEMINI_THROTTLE):
-                cooldown = time.time()
+        if socket_enabled:
+            if mode.count("0") == 1:
+                if (mode[0] == '0' and time.time() - cooldown > GEMINI_THROTTLE):
+                    cooldown = time.time()
                 output = analyze_image_with_gemini(raw_image, "Can you describe what it feels like to be in this image? Speak like you are currently talking to a blind friend next to you, dont use Imagine the-. Describe briefly where things are located be as consice and objective as possible dont make a list just a couple sentences.")
                 print(output)
             elif (time.time() - cooldown <= GEMINI_THROTTLE):
