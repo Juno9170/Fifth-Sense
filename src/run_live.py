@@ -218,6 +218,8 @@ if __name__ == '__main__':
                 cooldown = time.time()
                 output = analyze_image_with_gemini(raw_image, "Can you describe what it feels like to be in this image? Speak like you are currently talking to a blind friend next to you, dont use Imagine the-. Describe briefly where things are located be as consice and objective as possible dont make a list just a couple sentences.")
                 print(output)
+            elif (time.time() - cooldown <= GEMINI_THROTTLE):
+                print("GEMINI ON COOLDOWN")
 
         # Apply colormap to normalized depth
 
