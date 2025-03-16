@@ -11,9 +11,9 @@
 
 using namespace std;
 
-int readGPIO(int num);
+int readGPIO(std::ifstream& file);
 int writeGPIO(int num, std::string value);
-int sendMessage(std::string message);
+int sendMessage(int sock, sockaddr_in serverAddr, std::string message);
 
 int main() {
 //
@@ -21,27 +21,21 @@ int main() {
 
 	//if (file == NULL) P
 
-    /*while (true) {
 
-    	//for (int x = 1; x < 30 ; x++) {
-    	//	std::cout << readGPIO(x);
-    	//}
 
-    	cout << "LOOP" << endl;
-
-    	writeGPIO(2, "0");
-    	cout << readGPIO(2) << endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-    	writeGPIO(2, "1");
-    	cout << readGPIO(2) << endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    	/*for (int x = 1; x < 30 ; x++) {
+    		std::ifstream gpio("/dev/gpio/" + std::to_string(x), std::ios::in);
+    		std::cout << readGPIO(gpio);
+    		gpio.close();
+    	}*/
 
 
 
 
-    }
-    return 0;*/
+
+
+
+//    return 0;
 
 	/*std::ifstream file("/dev/gpio/2", std::ios::in);
 
@@ -70,48 +64,113 @@ int main() {
     std::cout << "exit" << std::endl;
     file.close();*/
 
+	std::ifstream gpio_1("/dev/gpio/1", std::ios::in);
+	std::ifstream gpio_2("/dev/gpio/2", std::ios::in);
+	std::ifstream gpio_3("/dev/gpio/3", std::ios::in);
+	std::ifstream gpio_6("/dev/gpio/6", std::ios::in);
+	std::ifstream gpio_7("/dev/gpio/7", std::ios::in);
+	std::ifstream gpio_8("/dev/gpio/8", std::ios::in);
+	std::ifstream gpio_9("/dev/gpio/9", std::ios::in);
+	std::ifstream gpio_10("/dev/gpio/10", std::ios::in);
+
+	int sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (sock < 0) {
+		std::cerr << "Socket failed to create." << strerror(errno) << std::endl;
+
+		return -1;
+	}
+
+	struct sockaddr_in serverAddr;
+	serverAddr.sin_family = AF_INET;
+	serverAddr.sin_port = htons(12346);
+	serverAddr.sin_addr.s_addr = inet_addr("192.168.2.99");
+
+    /*if (connect(sock, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+        std::cerr << "Connection failed!" << strerror(errno) << std::endl;
+        return -1;
+    }*/
+
 	while (true) {
 
-		int p1 = readGPIO(1);
-		int p2 = readGPIO(2);
-		int p3 = readGPIO(3);
-		int p6 = readGPIO(6);
+		int p1 = readGPIO(gpio_1);
+		int p2 = readGPIO(gpio_2);
+		int p3 = readGPIO(gpio_3);
+		int p6 = readGPIO(gpio_6);
+		int p7 = readGPIO(gpio_7);
+		int p8 = readGPIO(gpio_8);
+		int p9 = readGPIO(gpio_9);
+		int p10 = readGPIO(gpio_10);
 
-		std::cout << p1 << p2 << p3 << p6 << std::endl;
+		std::cout << p1 << p2 << p3 << p6 << p7 << p8 << p9 << p10 << std::endl;
 
 		std::ostringstream oss;
 		oss  << p1 << p2 << p3 << p6;
 		std::string s = oss.str();
 
-		sendMessage(s);
+		if (sendMessage(sock, serverAddr, s) < 0) {
+
+			std::this_thread::sleep_for(std::chrono::seconds(3));
+
+			sock = socket(AF_INET, SOCK_STREAM, 0);
+
+			if (sock < 0) {
+				std::cerr << "Socket failed to create." << strerror(errno) << std::endl;
+				close(sock);
+				continue;
+			}
+
+		    if (connect(sock, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+
+		        std::cerr << "Connection failed!" << strerror(errno) << std::endl;
+		        close(sock);
+		    }
+
+
+
+		}
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
 	}
 
+	gpio_1.close();
+	gpio_2.close();
+	gpio_3.close();
+	gpio_6.close();
+	gpio_7.close();
+	gpio_8.close();
+	gpio_9.close();
+	gpio_10.close();
+	close(sock);
+
     return 0;
 }
 
-int readGPIO(int num) {
+int readGPIO(std::ifstream& file) {
 
-	std::string gpio_path = "/dev/gpio/" + std::to_string(num);
-	std::ifstream file(gpio_path, std::ios::in);
+	//std::string gpio_path = "/dev/gpio/" + std::to_string(num);
+	//std::ifstream file(gpio_path, std::ios::in);
 
 	int value = 2;
 
 	if (file.is_open()) {
 
-		file >> value;
-		file.close();
+        file.seekg(0, std::ios::beg);
+        file >> value;
+        file.clear();
+
 		return value;
 
 	} else {
 		std::cerr << "Error Opening File: " << strerror(errno) << std::endl;
-		return 2;
+		return value;
 	}
 
 }
 
+/*
+ * Doesnt work.
+ */
 int writeGPIO(int num, std::string value) {
 
 	std::string gpio_path = "/dev/gpio/" + std::to_string(num);
@@ -131,24 +190,8 @@ int writeGPIO(int num, std::string value) {
 }
 
 
-int sendMessage(std::string message) {
+int sendMessage(int sock, sockaddr_in serverAddr, std::string message) {
 
-	int sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (sock < 0) {
-		std::cerr << "Socket fialed to create." << strerror(errno) << std::endl;
-
-		return -1;
-	}
-
-	struct sockaddr_in serverAddr;
-	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_port = htons(12346);
-	serverAddr.sin_addr.s_addr = inet_addr("192.168.2.96");
-
-    if (connect(sock, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
-        std::cerr << "Connection failed!" << strerror(errno) << std::endl;
-        return -1;
-    }
 
     const char *msg = message.c_str();
 
@@ -158,8 +201,6 @@ int sendMessage(std::string message) {
     }
 
     std::cout << "Message sent to the server!" << std::endl;
-
-    close(sock);
 
     return 0;
 
