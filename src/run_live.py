@@ -287,6 +287,8 @@ if __name__ == '__main__':
                     muted = True
                 if (mode[2] == '0'):
                     muted = False
+                if (mode[3] == '0'):
+                    exit()
             
         cv2.imshow('Depth', depth)
 
