@@ -43,9 +43,11 @@ import socket
 
 if __name__ == '__main__':
 
+
     # ------------------------------------------------------------
     # INITIALIZATION
     # ------------------------------------------------------------
+    print("Starting program...")
 
     parser = argparse.ArgumentParser(description='Depth Anything V2')
     
@@ -89,13 +91,13 @@ if __name__ == '__main__':
         port = 12346
 
         s.bind(('0.0.0.0', port))
-        print ("socket binded to %s" %(port))
+        print ("Socket bound to %s" %(port))
 
         s.listen(5)	 
-        print ("socket is listening")
+        print ("Socket is listening")
 
         c, addr = s.accept()
-        print ('Got connection from', addr )
+        print ('Got connection from', addr)
 
     
     cap = cv2.VideoCapture(1)
@@ -110,8 +112,8 @@ if __name__ == '__main__':
     cooldown = time.time()
     boop_cooldown = time.time()
 
-    audio_system = AudioSystem();
-    audio_system.start();
+    audio_system = AudioSystem()
+    audio_system.start()
 
 
     while cap.isOpened():
@@ -119,6 +121,7 @@ if __name__ == '__main__':
         # ------------------------------------------------------------
         # LOOP SETUP
         # ------------------------------------------------------------
+        print("Starting frame loop...")
 
         if SOCKET_ENABLED:
             mode = c.recv(1024).decode()
@@ -140,7 +143,7 @@ if __name__ == '__main__':
         # ------------------------------------------------------------
         # CLEAR CACHE
         # ------------------------------------------------------------
-
+        print("Clearing cache...")
         if DEVICE == 'mps':
             torch.mps.synchronize()
             if frame_count % CLEAR_CACHE_RATE == 0:
@@ -155,6 +158,7 @@ if __name__ == '__main__':
         # ------------------------------------------------------------
         # EXTRACT DEPTHS
         # ------------------------------------------------------------
+        print("Extracting depths...")
 
         depth = depth_anything.infer_image(raw_image, args.input_size)
         
@@ -167,6 +171,7 @@ if __name__ == '__main__':
         # ------------------------------------------------------------
         # OBJECT DETECTION
         # ------------------------------------------------------------
+        print("Performing object detection...")
 
         # Perform object detection on the frame    
         results = yolo_model(raw_image)
@@ -210,6 +215,10 @@ if __name__ == '__main__':
         # ------------------------------------------------------------
         # FIND THE CLOSEST N OBJECTS TO THE USER AND THEIR DISTANCES/ANGLES
         # ------------------------------------------------------------
+
+        print("Finding closest objects...")
+        print("Calculating distances and angles...")
+
         avg_depths = []
         # use depth to find the closest 5 objects to the user
         # get the depth values of the objects
@@ -255,6 +264,7 @@ if __name__ == '__main__':
         # ------------------------------------------------------------
         # GEMINI
         # ------------------------------------------------------------
+        print("Analyzing image with Gemini...")
 
         if SOCKET_ENABLED:
 
