@@ -30,7 +30,7 @@ RESIZE_FACTOR = 1
 YOLO_MODEL_NAME = 'yolo11n.pt'
 GEMINI_THROTTLE = 8 # 8s
 
-socket_enabled = False
+socket_enabled = True
 
 import socket
 
@@ -98,11 +98,13 @@ if __name__ == '__main__':
     cooldown = time.time()
 
     while cap.isOpened():
+
+        print("Frame count: ", frame_count)
         
         if socket_enabled:
-            c, addr = s.accept()
 
             mode = c.recv(1024).decode()
+            print("Mode: ", mode)
         start_time = time.time()
 
         frame_count += 1
@@ -219,6 +221,7 @@ if __name__ == '__main__':
         for obj in closest_objects:
             boop(obj['yaw'], obj['pitch'], obj['depth'])
             # boop_threaded(obj['yaw'], obj['pitch'], obj['depth'])
+
 
         #print(closest_objects)
         #print(mode)
