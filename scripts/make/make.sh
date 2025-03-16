@@ -1,0 +1,1 @@
+scp make root@qnxpi.local:/data/home/root/bin
