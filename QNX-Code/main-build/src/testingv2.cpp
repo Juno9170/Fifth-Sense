@@ -12,57 +12,11 @@
 using namespace std;
 
 int readGPIO(std::ifstream& file);
-int writeGPIO(std::ofstream file, std::string value);
+int writeGPIO(std::ofstream& file, std::string value);
 int sendMessage(int sock, sockaddr_in serverAddr, std::string message);
+void checkPinStatuses(int end);
 
 int main(int argc, char *argv[]) {
-//
-	//FILE *file = fopen("/dev/gpio/2");
-
-	//if (file == NULL) P
-
-
-
-    	/*for (int x = 1; x < 30 ; x++) {
-    		std::ifstream gpio("/dev/gpio/" + std::to_string(x), std::ios::in);
-    		std::cout << readGPIO(gpio);
-    		gpio.close();
-    	}*/
-
-
-
-
-
-
-
-//    return 0;
-
-	/*std::ifstream file("/dev/gpio/2", std::ios::in);
-
-	if (!file.is_open()) {
-		std::cerr << "Error Opening File: " << strerror(errno) << std::endl;
-		return 1;
-	}
-
-    file.seekg(0, std::ios::end); // Move to the end of the file
-
-    std::string line;
-    while (true) {
-        if (std::getline(file, line)) { // Read new lines
-        	//std::cout << "line" << std::endl;
-            std::cout << line << std::endl;
-            sendMessage(line);
-        } else {
-        	//std::cout << "eof" << std::endl;
-            file.clear(); // Clear EOF flag
-            file.seekg(0, std::ios::beg);
-        }
-        //std::cout << "loop" << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // Adjust for real-time reading
-    }
-
-    std::cout << "exit" << std::endl;
-    file.close();*/
 
 	const char* ipaddr = NULL;
 
@@ -126,18 +80,16 @@ int main(int argc, char *argv[]) {
 			sock = socket(AF_INET, SOCK_STREAM, 0);
 
 			if (sock < 0) {
-				std::cerr << "Socket failed to create." << strerror(errno) << std::endl;
+				std::cerr << "Socket failed to create. Error: " << strerror(errno) << std::endl;
 				close(sock);
 				continue;
 			}
 
 		    if (connect(sock, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
 
-		        std::cerr << "Connection failed!" << strerror(errno) << std::endl;
+		        std::cerr << "Connection failed. Error: " << strerror(errno) << std::endl;
 		        close(sock);
 		    }
-
-
 
 		}
 
@@ -181,9 +133,9 @@ int readGPIO(std::ifstream& file) {
 }
 
 /*
- * Doesnt work.
+ * Doesnt work. Maybe does?
  */
-int writeGPIO(std::ofstream file, std::string value) {
+int writeGPIO(std::ofstream& file, std::string value) {
 
 	//std::string gpio_path = "/dev/gpio/" + std::to_string(num);
 	//std::ofstream file(gpio_path, std::ios::in);
@@ -215,5 +167,15 @@ int sendMessage(int sock, sockaddr_in serverAddr, std::string message) {
     std::cout << "Message sent to the server!" << std::endl;
 
     return 0;
+
+}
+
+void checkPinStatuses(int end) {
+
+	for (int x = 0; x < end ; x++) {
+		std::ifstream gpio("/dev/gpio/" + std::to_string(x), std::ios::in);
+		std::cout << readGPIO(gpio);
+		gpio.close();
+	}
 
 }
