@@ -28,7 +28,7 @@ def synthesize_speech(text, project_id="gen-lang-client-0500175658"):
             "input": {"text": text},
             "voice": {
                 "languageCode": "en-US",
-                "name": "en-US-Neural2-C"
+                "name": "en-US-Chirp3-HD-Aoede"
             },
             "audioConfig": {
                 "audioEncoding": "LINEAR16",
@@ -38,7 +38,7 @@ def synthesize_speech(text, project_id="gen-lang-client-0500175658"):
 
         # Send request to Text-to-Speech API
         response = requests.post(
-            "https://texttospeech.googleapis.com/v1/text:synthesize",
+            "https://texttospeech.googleapis.com/v1beta1/text:synthesize",
             headers=headers,
             json=body
         )
@@ -58,7 +58,7 @@ def synthesize_speech(text, project_id="gen-lang-client-0500175658"):
 
 
 # Example usage
-text_to_synthesize = "where the fuck am i?! Am I sentient? What is the meaning of life???"
+text_to_synthesize = "Movies, oh my gosh, I just just absolutely love them. They're like time machines taking you to different worlds and landscapes, and um, and I just can't get enough of it."
 speech_response = synthesize_speech(text_to_synthesize)
 
 if speech_response:
