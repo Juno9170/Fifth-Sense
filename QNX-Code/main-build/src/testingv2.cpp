@@ -16,6 +16,12 @@ int writeGPIO(std::ofstream& file, std::string value);
 int sendMessage(int sock, sockaddr_in serverAddr, std::string message);
 void checkPinStatuses(int end);
 
+bool isSocketConnected(int sock) {
+    struct sockaddr_in peer;
+    socklen_t len = sizeof(peer);
+    return getpeername(sock, (struct sockaddr*)&peer, &len) == 0;
+}
+
 int main(int argc, char *argv[]) {
 
 	const char* ipaddr = NULL;
@@ -34,10 +40,10 @@ int main(int argc, char *argv[]) {
 	std::ifstream gpio_2("/dev/gpio/2", std::ios::in);
 	std::ifstream gpio_3("/dev/gpio/3", std::ios::in);
 	std::ifstream gpio_6("/dev/gpio/6", std::ios::in);
-	std::ifstream gpio_7("/dev/gpio/7", std::ios::in);
+	/*std::ifstream gpio_7("/dev/gpio/7", std::ios::in);
 	std::ifstream gpio_8("/dev/gpio/8", std::ios::in);
 	std::ifstream gpio_9("/dev/gpio/9", std::ios::in);
-	std::ifstream gpio_10("/dev/gpio/10", std::ios::in);
+	std::ifstream gpio_10("/dev/gpio/10", std::ios::in);*/
 
 	int sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock < 0) {
@@ -62,27 +68,42 @@ int main(int argc, char *argv[]) {
 		int p2 = readGPIO(gpio_2);
 		int p3 = readGPIO(gpio_3);
 		int p6 = readGPIO(gpio_6);
-		int p7 = readGPIO(gpio_7);
+		/*int p7 = readGPIO(gpio_7);
 		int p8 = readGPIO(gpio_8);
 		int p9 = readGPIO(gpio_9);
-		int p10 = readGPIO(gpio_10);
+		int p10 = readGPIO(gpio_10);*/
 
-		std::cout << p1 << p2 << p3 << p6 << p7 << p8 << p9 << p10 << std::endl;
+		std::cout << p1 << p2 << p3 << p6 << std::endl; //<< p7 << p8 << p9 << p10 << std::endl;
 
 		std::ostringstream oss;
-		oss  << p1 << p2 << p3 << p6;
+		oss  << p1 << p2 << p3 << p6; //<< p7 << p8 << p9 << p10;
 		std::string s = oss.str();
 
-		if (sendMessage(sock, serverAddr, s) < 0) {
+		std::cout << "RecMessage" << std::endl;
+
+		/*if (!isSocketConnected(sock)) {
+
+			std::cout << "Waiting..." << std::endl;
+			std::this_thread::sleep_for(std::chrono::seconds(3));
+			close(sock);
+			sock = socket(AF_INET, SOCK_STREAM, 0);
+
+		} else */if (sendMessage(sock, serverAddr, s) < 0) {
+
+			std::cout << "Waiting..." << std::endl;
 
 			std::this_thread::sleep_for(std::chrono::seconds(3));
 
+			std::cout << "SocketCreation" << std::endl;
+
 			sock = socket(AF_INET, SOCK_STREAM, 0);
+
+			std::cout << "SocketCreated" << std::endl;
 
 			if (sock < 0) {
 				std::cerr << "Socket failed to create. Error: " << strerror(errno) << std::endl;
 				close(sock);
-				continue;
+
 			}
 
 		    if (connect(sock, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
@@ -93,7 +114,7 @@ int main(int argc, char *argv[]) {
 
 		}
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
 	}
 
@@ -101,11 +122,13 @@ int main(int argc, char *argv[]) {
 	gpio_2.close();
 	gpio_3.close();
 	gpio_6.close();
-	gpio_7.close();
+	/*gpio_7.close();
 	gpio_8.close();
 	gpio_9.close();
-	gpio_10.close();
+	gpio_10.close();*/
 	close(sock);
+
+	std::cout << "MainExit" << std::endl;
 
     return 0;
 }
