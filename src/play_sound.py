@@ -96,9 +96,14 @@ class AudioSystem:
                     
                     if task is None:
                         break
-                        
+
                     yaw, pitch, depth = task
-                    db_reduction = np.interp(depth, [0, 1], [DB_REDUCTION_MAX, DB_REDUCTION_MIN])
+
+                    if depth == 0:
+                        db_reduction = 9999999999
+                    else:
+                        db_reduction = np.interp(depth, [0, 1], [DB_REDUCTION_MAX, DB_REDUCTION_MIN])
+                        
                     binaural = self._get_sound(yaw, pitch)
                     binaural = adjust_volume_db(binaural, db_reduction)
                     

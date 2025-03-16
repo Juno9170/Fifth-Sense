@@ -57,32 +57,38 @@ def synthesize_speech(text, project_id="gen-lang-client-0500175658"):
         return None
 
 
-# Example usage
-text_to_synthesize = "Movies, oh my gosh, I just just absolutely love them. They're like time machines taking you to different worlds and landscapes, and um, and I just can't get enough of it."
-speech_response = synthesize_speech(text_to_synthesize)
+def speak(text_to_synthesize):
+    # Example usage
+    speech_response = synthesize_speech(text_to_synthesize)
 
-if speech_response:
+    if speech_response:
 
-    audio_content = speech_response.get("audioContent")
-    if audio_content:
-        # Decode the base64-encoded audio content
-        audio_data = base64.b64decode(audio_content)
+        audio_content = speech_response.get("audioContent")
+        if audio_content:
+            # Decode the base64-encoded audio content
+            audio_data = base64.b64decode(audio_content)
 
-        # Use wave to read the audio data from the decoded bytes
-        with wave.open(io.BytesIO(audio_data), "rb") as wf:
-            sample_rate = wf.getframerate()
-            channels = wf.getnchannels()
-            frames = wf.readframes(wf.getnframes())
-            # Convert audio frames to a numpy array of type int16
-            audio_array = np.frombuffer(frames, dtype=np.int16)
-            # Reshape the array if the audio has multiple channels
-            if channels > 1:
-                audio_array = audio_array.reshape(-1, channels)
+            # Use wave to read the audio data from the decoded bytes
+            with wave.open(io.BytesIO(audio_data), "rb") as wf:
+                sample_rate = 44000
+                channels = wf.getnchannels()
+                frames = wf.readframes(wf.getnframes())
+                # Convert audio frames to a numpy array of type int16
+                audio_array = np.frombuffer(frames, dtype=np.int16)
+                # Reshape the array if the audio has multiple channels
+                if channels > 1:
+                    audio_array = audio_array.reshape(-1, channels)
 
-        # Play the audio using sounddevice (no extra window opens)
-        sd.play(audio_array, sample_rate)
-        sd.wait()  # Wait until audio is finished playing
+            sd.stop()
+            # Play the audio using sounddevice (no extra window opens)
+            sd.play(audio_array, sample_rate)
+            sd.wait()  # Wait until audio is finished playing
+        else:
+            print("No audio content found.")
     else:
-        print("No audio content found.")
-else:
-    print("Speech synthesis failed.")
+        print("Speech synthesis failed.")
+
+
+if __name__ == "__main__":
+    text_to_synthesize = "Hey, so I'm sitting on a comfy couch, I can feel the texture of it right here behind my back, its a nice dark gray fabric. And in front of me, someone's holding up a big board full of stickers, I can feel the cool wall behind me."
+    speak(text_to_synthesize)

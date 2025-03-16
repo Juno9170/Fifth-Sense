@@ -9,11 +9,13 @@ import torch
 import time
 import gc
 import threading
+import socket
 
 from ultralytics import YOLO
 from extract_depths_base import extract_depths
 from extract_objects import extract_objects
 from play_sound import *
+from play_tts import speak
 
 from depth_anything_v2.dpt import DepthAnythingV2 as DepthAnythingV2Metric
 from depth_anything.dpt import DepthAnythingV2 as DepthAnythingV2Base
@@ -35,14 +37,10 @@ GEMINI_THROTTLE = 8 # 8s
 
 BOOP_THROTTLE = 2
 
-SOCKET_ENABLED = False
+SOCKET_ENABLED = True
 METRIC = True
 
-import socket
-
-
 if __name__ == '__main__':
-
 
     # ------------------------------------------------------------
     # INITIALIZATION
@@ -100,7 +98,7 @@ if __name__ == '__main__':
         print ('Got connection from', addr)
 
     
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
 
     fps_array = []
 
@@ -115,13 +113,14 @@ if __name__ == '__main__':
     audio_system = AudioSystem()
     audio_system.start()
 
+    muted = False
 
+    print("Starting frame loop...")
     while cap.isOpened():
 
         # ------------------------------------------------------------
         # LOOP SETUP
         # ------------------------------------------------------------
-        print("Starting frame loop...")
 
         if SOCKET_ENABLED:
             mode = c.recv(1024).decode()
@@ -143,7 +142,7 @@ if __name__ == '__main__':
         # ------------------------------------------------------------
         # CLEAR CACHE
         # ------------------------------------------------------------
-        print("Clearing cache...")
+        # print("Clearing cache...")
         if DEVICE == 'mps':
             torch.mps.synchronize()
             if frame_count % CLEAR_CACHE_RATE == 0:
@@ -158,7 +157,7 @@ if __name__ == '__main__':
         # ------------------------------------------------------------
         # EXTRACT DEPTHS
         # ------------------------------------------------------------
-        print("Extracting depths...")
+        # print("Extracting depths...")
 
         depth = depth_anything.infer_image(raw_image, args.input_size)
         
@@ -171,7 +170,7 @@ if __name__ == '__main__':
         # ------------------------------------------------------------
         # OBJECT DETECTION
         # ------------------------------------------------------------
-        print("Performing object detection...")
+        # print("Performing object detection...")
 
         # Perform object detection on the frame    
         results = yolo_model(raw_image)
@@ -216,8 +215,8 @@ if __name__ == '__main__':
         # FIND THE CLOSEST N OBJECTS TO THE USER AND THEIR DISTANCES/ANGLES
         # ------------------------------------------------------------
 
-        print("Finding closest objects...")
-        print("Calculating distances and angles...")
+        # print("Finding closest objects...")
+        # print("Calculating distances and angles...")
 
         avg_depths = []
         # use depth to find the closest 5 objects to the user
@@ -255,27 +254,40 @@ if __name__ == '__main__':
             })
 
         for obj in closest_objects[:N_CLOSEST_OBJECTS]:
-            audio_system.add_sound(  # Call directly without threading
-                obj['yaw'], 
-                obj['pitch'], 
-                obj['depth']
-            )
+            if not muted:
+                audio_system.add_sound(  # Call directly without threading
+                    obj['yaw'], 
+                    obj['pitch'], 
+                    obj['depth']
+                )
+            else:
+                audio_system.add_sound(  # Call directly without threading
+                    0, 
+                    0, 
+                    0
+                )
 
         # ------------------------------------------------------------
         # GEMINI
         # ------------------------------------------------------------
-        print("Analyzing image with Gemini...")
+        # print("Analyzing image with Gemini...")
+        print(muted)
 
         if SOCKET_ENABLED:
-
+            print(mode)
             if mode.count("0") == 1:
                 if (mode[0] == '0' and time.time() - cooldown > GEMINI_THROTTLE):
                     cooldown = time.time()
                     output = analyze_image_with_gemini(raw_image, "Can you describe what it feels like to be in this image? Speak like you are currently talking to a blind friend next to you, dont use Imagine the-. Describe briefly where things are located be as consice and objective as possible dont make a list just a couple sentences.")
-                    print(output)
+                    speak(output)
                 elif (time.time() - cooldown <= GEMINI_THROTTLE):
                     print("GEMINI ON COOLDOWN")
-
+                # MUTE/UNMUTE
+                if (mode[1] == '0'):
+                    muted = True
+                if (mode[2] == '0'):
+                    muted = False
+            
         cv2.imshow('Depth', depth)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
