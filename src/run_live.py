@@ -197,13 +197,18 @@ if __name__ == '__main__':
             x_distance_from_center_in_degrees = x_distance_from_center * deg_per_pixel
             y_distance_from_center_in_degrees = y_distance_from_center * deg_per_pixel
 
-            x = avg_depths[i] * np.tan(x_distance_from_center_in_degrees)
-            y = avg_depths[i] * np.tan(y_distance_from_center_in_degrees)
-            z = avg_depths[i]
+            # x = avg_depths[i] * np.tan(x_distance_from_center_in_degrees)
+            # y = avg_depths[i] * np.tan(y_distance_from_center_in_degrees)
+            # z = avg_depths[i]
 
+            # closest_objects.append({
+            #     'label': labels_array[i],
+            #     'coords': (x, y, z)
+            # })
             closest_objects.append({
                 'label': labels_array[i],
-                'coords': (x, y, z)
+                'pitch': y_distance_from_center_in_degrees,
+                'yaw': x_distance_from_center_in_degrees
             })
 
         #print(closest_objects)
