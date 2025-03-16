@@ -31,13 +31,13 @@ CLEAR_CACHE_RATE = 10000000000
 FRAME_LIMIT = 20000000
 CONF_THRESHOLD = 0.6
 N_CLOSEST_OBJECTS = 3
-RESIZE_FACTOR = 1
+RESIZE_FACTOR = 0.5
 YOLO_MODEL_NAME = 'yolo11n.pt'
 GEMINI_THROTTLE = 8 # 8s
 
-BOOP_THROTTLE = 2
+BOOP_THROTTLE = 3
 
-SOCKET_ENABLED = True
+SOCKET_ENABLED = False
 METRIC = True
 
 GEMINI_PROMPT = """
@@ -45,6 +45,28 @@ You are a tool that is helping a blind person navigate their environment.
 Describe the environment in a concise manner while being specific about the location of objects.
 Think about what the blind person would want to know about the environment.
 """
+
+def get_interquartile_range_array(data):
+    """
+    Creates a new NumPy array containing only the values from the input array
+    that fall within the interquartile range (IQR).
+
+    Args:
+      data: A NumPy array.
+
+    Returns:
+      A new NumPy array containing only the values within the IQR.
+    """
+    q1 = np.quantile(data, 0.25)
+    q3 = np.quantile(data, 0.75)
+
+    # Create a boolean mask to select values within the IQR
+    mask = (data >= q1) & (data <= q3)
+
+    # Apply the mask to the original array to get the values within the IQR
+    iqr_array = data[mask]
+
+    return iqr_array
 
 if __name__ == '__main__':
 
@@ -56,7 +78,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Depth Anything V2')
     
     # parser.add_argument('--img-path', type=str)
-    parser.add_argument('--input-size', type=int, default=350)
+    parser.add_argument('--input-size', type=int, default=280)
     # parser.add_argument('--outdir', type=str, default='./vis_depth')
     
     parser.add_argument('--encoder', type=str, default='vits', choices=['vits', 'vitb', 'vitl', 'vitg'])
@@ -230,7 +252,7 @@ if __name__ == '__main__':
             # get the depth values of the objects
             for box in boxes_array:
                 x1, y1, x2, y2 = box
-                object_depth = depth_values[y1:y2, x1:x2]
+                object_depth = get_interquartile_range_array(depth_values[y1:y2, x1:x2])
                 avg_depths.append(np.mean(object_depth))
 
             # find the N smallest depth values
@@ -260,13 +282,7 @@ if __name__ == '__main__':
                     'yaw': x_distance_from_center_in_degrees
                 })
 
-            # if len(closest_objects) == 0:
-            #     closest_objects.append({
-            #         'label': 'No objects detected',
-            #         'depth': 0,
-            #         'pitch': 0,
-            #         'yaw': 0
-            #     })
+            
 
             for obj in closest_objects[:N_CLOSEST_OBJECTS]:
                 if not muted:
@@ -281,6 +297,15 @@ if __name__ == '__main__':
                         0, 
                         0
                     )
+
+            if len(closest_objects) == 0:
+                for i in range(3):
+                    closest_objects.append({
+                        'label': 'No objects detected',
+                        'depth': 0,
+                        'pitch': 0,
+                        'yaw': 0
+                    })
 
             # ------------------------------------------------------------
             # GEMINI

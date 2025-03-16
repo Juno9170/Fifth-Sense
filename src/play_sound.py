@@ -11,8 +11,8 @@ from collections import deque
 from play_tts import audio_lock  # Import the shared lock
 
 # Keep your original constants
-DB_REDUCTION_MAX = -50
-DB_REDUCTION_MIN = -6 
+DB_REDUCTION_MAX = -60
+DB_REDUCTION_MIN = -6
 SOFA = [
     "HRTFsets/SOFA Far-Field/HRIR_FULL2DEG.sofa",
     "HRTFsets/SOFA Far-Field/HRIR_L2702.sofa",
@@ -103,8 +103,9 @@ class AudioSystem:
                     if depth == 0:
                         db_reduction = 9999999999
                     else:
-                        db_reduction = np.interp(depth, [0, 1], [DB_REDUCTION_MAX, DB_REDUCTION_MIN])
-                        
+                        db_reduction = np.interp(depth, [0, 1], [DB_REDUCTION_MIN, DB_REDUCTION_MAX])
+                    
+                    print(f"DB Reduction: {db_reduction}")
                     binaural = self._get_sound(yaw, pitch)
                     binaural = adjust_volume_db(binaural, db_reduction)
                     
@@ -112,7 +113,8 @@ class AudioSystem:
                         # Acquire the same lock before playing boops
                         with audio_lock:
                             sd.play(binaural, self.fs)
-                            sd.wait()
+                            time.sleep(0.2)
+                            # sd.wait()
                     except Exception as e:
                         print(f"Error playing sound: {e}")
                         
