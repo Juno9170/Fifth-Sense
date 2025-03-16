@@ -77,8 +77,8 @@ def get_sound(sound_path, angle, elevation, set_index=0, target_fs=48000):
     Stereo3D[0:len(rend_R), 1] += (rend_R / M)
 
     # print operation
-    print("Rendered at azimuth: ", angle_label,
-          "degrees, elevation: ", elev, "degrees")
+    # print("Rendered at azimuth: ", angle_label,
+    #       "degrees, elevation: ", elev, "degrees")
 
     return Stereo3D
 

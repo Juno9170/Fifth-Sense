@@ -70,8 +70,6 @@ if __name__ == '__main__':
     }
     
     if METRIC:
-        print(f"{args.load_from}")
-        print(f"{model_configs[args.encoder]}")
         depth_anything = DepthAnythingV2Metric(**{**model_configs[args.encoder], 'max_depth': args.max_depth})
         depth_anything.load_state_dict(torch.load(args.load_from, map_location='cpu'))
     else:
@@ -228,7 +226,7 @@ if __name__ == '__main__':
 
         
         for obj in closest_objects:
-            print("depth: ", obj['depth'])
+            # print("depth: ", obj['depth'])
             boop(obj['yaw'], obj['pitch'], obj['depth'], 0.1)
 
 
