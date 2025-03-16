@@ -45,6 +45,11 @@ def boop_threaded(yaw, pitch, depth, delay=0.5):
     thread.start()
 
 if __name__ == '__main__':
+
+    # ------------------------------------------------------------
+    # INITIALIZATION
+    # ------------------------------------------------------------
+
     parser = argparse.ArgumentParser(description='Depth Anything V2')
     
     # parser.add_argument('--img-path', type=str)
@@ -59,7 +64,7 @@ if __name__ == '__main__':
     parser.add_argument('--grayscale', dest='grayscale', action='store_true', help='do not apply colorful palette')
     
     args = parser.parse_args()
-    
+
     DEVICE = 'cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu'
     
     model_configs = {
@@ -107,7 +112,12 @@ if __name__ == '__main__':
     clear = lambda: os.system('cls')
     cooldown = time.time()
 
+
     while cap.isOpened():
+
+        # ------------------------------------------------------------
+        # LOOP SETUP
+        # ------------------------------------------------------------
 
         if SOCKET_ENABLED:
             mode = c.recv(1024).decode()
@@ -126,6 +136,10 @@ if __name__ == '__main__':
 
         raw_image = cv2.resize(raw_image, (0, 0), fx=RESIZE_FACTOR, fy=RESIZE_FACTOR)
         
+        # ------------------------------------------------------------
+        # CLEAR CACHE
+        # ------------------------------------------------------------
+
         if DEVICE == 'mps':
             torch.mps.synchronize()
             if frame_count % CLEAR_CACHE_RATE == 0:
@@ -137,7 +151,10 @@ if __name__ == '__main__':
                 gc.collect()
                 torch.cuda.empty_cache()
 
-        # extract depths
+        # ------------------------------------------------------------
+        # EXTRACT DEPTHS
+        # ------------------------------------------------------------
+
         depth = depth_anything.infer_image(raw_image, args.input_size)
         
         # Normalize depth values to 0-1 range before applying colormap
@@ -146,7 +163,10 @@ if __name__ == '__main__':
         depth_values = depth.copy()
         depth = (cmap(depth)[:, :, :3] * 255)[:, :, ::-1].astype(np.uint8)
 
-        # extract objects
+        # ------------------------------------------------------------
+        # OBJECT DETECTION
+        # ------------------------------------------------------------
+
         # Perform object detection on the frame    
         results = yolo_model(raw_image)
 
@@ -187,7 +207,7 @@ if __name__ == '__main__':
             continue
 
         # ------------------------------------------------------------
-        # FIND THE CLOSEST N OBJECTS TO THE USER
+        # FIND THE CLOSEST N OBJECTS TO THE USER AND THEIR DISTANCES/ANGLES
         # ------------------------------------------------------------
         avg_depths = []
         # use depth to find the closest 5 objects to the user
@@ -224,11 +244,17 @@ if __name__ == '__main__':
                 'yaw': x_distance_from_center_in_degrees
             })
 
-        
+        # ------------------------------------------------------------
+        # PLAY SOUNDS
+        # ------------------------------------------------------------
+
         for obj in closest_objects:
             # print("depth: ", obj['depth'])
             boop(obj['yaw'], obj['pitch'], obj['depth'], 0.1)
 
+        # ------------------------------------------------------------
+        # GEMINI
+        # ------------------------------------------------------------
 
         if SOCKET_ENABLED:
 

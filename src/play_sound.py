@@ -98,7 +98,8 @@ def boop(yaw, pitch, depth, delay=0.5):
     db_reduction = np.interp(depth, [0, 1], [DB_REDUCTION_MAX, DB_REDUCTION_MIN])
     binaural = adjust_volume_db(binaural, db_reduction)
     sd.play(binaural, fs)
-    time.sleep(delay)
+    # sd.wait()
+    # time.sleep(delay)
 
 
 if __name__ == "__main__":
