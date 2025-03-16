@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
 	struct sockaddr_in serverAddr;
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_port = htons(12346);
-	serverAddr.sin_addr.s_addr = inet_addr("192.168.2.104");
+	serverAddr.sin_addr.s_addr = inet_addr(ipaddr);
 
     /*if (connect(sock, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
         std::cerr << "Connection failed!" << strerror(errno) << std::endl;
@@ -112,9 +112,6 @@ int main(int argc, char *argv[]) {
 
 int readGPIO(std::ifstream& file) {
 
-	//std::string gpio_path = "/dev/gpio/" + std::to_string(num);
-	//std::ifstream file(gpio_path, std::ios::in);
-
 	int value = 2;
 
 	if (file.is_open()) {
@@ -133,12 +130,9 @@ int readGPIO(std::ifstream& file) {
 }
 
 /*
- * Doesnt work. Maybe does?
+ * Doesnt work.
  */
 int writeGPIO(std::ofstream& file, std::string value) {
-
-	//std::string gpio_path = "/dev/gpio/" + std::to_string(num);
-	//std::ofstream file(gpio_path, std::ios::in);
 
 	if (file.is_open()) {
 
@@ -174,7 +168,7 @@ void checkPinStatuses(int end) {
 
 	for (int x = 0; x < end ; x++) {
 		std::ifstream gpio("/dev/gpio/" + std::to_string(x), std::ios::in);
-		std::cout << readGPIO(gpio);
+		std::cout << readGPIO(gpio) << std::endl;
 		gpio.close();
 	}
 
