@@ -13,7 +13,7 @@ import threading
 from ultralytics import YOLO
 from extract_depths_base import extract_depths
 from extract_objects import extract_objects
-from play_sound import boop
+from play_sound import *
 
 from depth_anything_v2.dpt import DepthAnythingV2 as DepthAnythingV2Metric
 from depth_anything.dpt import DepthAnythingV2 as DepthAnythingV2Base
@@ -33,16 +33,13 @@ RESIZE_FACTOR = 1
 YOLO_MODEL_NAME = 'yolo11n.pt'
 GEMINI_THROTTLE = 8 # 8s
 
+BOOP_THROTTLE = 2
+
 SOCKET_ENABLED = False
 METRIC = True
 
 import socket
 
-# Modify the boop function to be thread-safe
-def boop_threaded(yaw, pitch, depth, delay=0.5):
-    thread = threading.Thread(target=boop, args=(yaw, pitch, depth, delay))
-    thread.daemon = True  # This ensures the thread will exit when the main program exits
-    thread.start()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Depth Anything V2')
@@ -106,6 +103,10 @@ if __name__ == '__main__':
 
     clear = lambda: os.system('cls')
     cooldown = time.time()
+    boop_cooldown = time.time()
+
+    audio_system = AudioSystem();
+    audio_system.start();
 
     while cap.isOpened():
 
@@ -224,10 +225,12 @@ if __name__ == '__main__':
                 'yaw': x_distance_from_center_in_degrees
             })
 
-        
-        for obj in closest_objects:
-            # print("depth: ", obj['depth'])
-            boop(obj['yaw'], obj['pitch'], obj['depth'], 0.1)
+        for obj in closest_objects[:N_CLOSEST_OBJECTS]:
+            audio_system.add_sound(  # Call directly without threading
+                obj['yaw'], 
+                obj['pitch'], 
+                obj['depth']
+            )
 
 
         if SOCKET_ENABLED:
