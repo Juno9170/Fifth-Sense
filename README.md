@@ -29,3 +29,8 @@ Our project leverages a distributed architecture. A laptop handles the computati
 - 🌍 Our vision for Sixth-Sense extends beyond the current prototype. We plan to expand TTS support to multiple languages, making the technology accessible to a global audience.
 
 - 📏 We realized very quickly that while DepthAnythingV2 is an incredible model and certainly has many super cool uses, the field of Monocular Depth Estimation, it doesn't currently excel in precision in its measurements. To take Sixth-Sense to the next level, we are looking to LIDAR as an alternative solution.
+
+## Team
+
+- [Ryan Zhu](https://github.com/Juno9170) & [Patrick Yuan](https://github.com/holycactusjuice) - AI/ML Engineers
+- [Uros Petrovic](https://github.com/crooder1) & [Puneet Singh](https://github.com/punz1738) - Embedded Systems/Hardware
