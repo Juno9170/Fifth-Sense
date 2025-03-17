@@ -30,14 +30,14 @@ CAMERA_FOV = 70
 CLEAR_CACHE_RATE = 10000000000
 FRAME_LIMIT = 20000000
 CONF_THRESHOLD = 0.6
-N_CLOSEST_OBJECTS = 3
+N_CLOSEST_OBJECTS = 1
 RESIZE_FACTOR = 0.5
 YOLO_MODEL_NAME = 'yolo11n.pt'
 GEMINI_THROTTLE = 8 # 8s
 
 BOOP_THROTTLE = 3
 
-SOCKET_ENABLED = False
+SOCKET_ENABLED = True
 METRIC = True
 
 GEMINI_PROMPT = """
@@ -278,8 +278,8 @@ if __name__ == '__main__':
                 closest_objects.append({
                     'label': labels_array[i],
                     'depth': avg_depths[i],
-                    'pitch': y_distance_from_center_in_degrees,
-                    'yaw': x_distance_from_center_in_degrees
+                    'pitch': y_distance_from_center_in_degrees * 2,
+                    'yaw': x_distance_from_center_in_degrees * 2
                 })
 
             
@@ -317,6 +317,7 @@ if __name__ == '__main__':
                     if (mode[0] == '0' and time.time() - cooldown > GEMINI_THROTTLE):
                         cooldown = time.time()
                         output = analyze_image_with_gemini(raw_image, GEMINI_PROMPT)
+                        print("GEMINI OUTPUT: ", output)
                         speak(output)
                     elif (time.time() - cooldown <= GEMINI_THROTTLE):
                         print("GEMINI ON COOLDOWN")
