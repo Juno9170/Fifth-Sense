@@ -1,47 +1,31 @@
-# [Sixth-Sense]([url](https://devpost.com/software/sixth-sense-eczxnv))
+# Sixth-Sense: A Symphony of Sound and Speech for Enhanced Spatial Awareness
 
-Bringing back not only the fifth, but also a sixth sense for the visually impaired. Powered by the bleeding edge in artificial intelligence and embedded systems, we aim to revolutionize accessibility.
+Imagine navigating the world with a richer understanding of your surroundings, not just through sight, but through a symphony of sound and descriptive language. That's the promise of Sixth-Sense, a project designed to provide real-time 3D awareness to visually impaired individuals using cutting-edge AI and spatial audio technology.
 
-## Overview
+## Here's how we're transforming perception:
 
-Sixth Sense is an innovative assistive technology designed to assist visually impaired individuals by providing real-time 3D object detection and scene understanding. It leverages AI models for depth estimation, object detection, and scene description to create an intuitive and informative experience.
+- 🤖 **AI-Powered Perception**: At the heart of Sixth-Sense lies a powerful AI core. We've harnessed the speed and accuracy of YOLOv11 to identify objects in the environment with remarkable precision. Complementing this, DepthAnythingV2 estimates the distance to these objects, creating a detailed 3D map of the surroundings. Combined, the two provide a precise spatial description of the user's environment.
 
-The system leverages the processing power of an M4 MacBook to handle camera input and complex AI processing, while a Raspberry Pi with QNX acts as a remote controller, managing communication and feedback through high-speed socket transmission. The system delivers real-time spatial audio feedback, allowing users to perceive the environment through sound.
+- 🧠 **Scene Understanding with Gemini**: But it's not just about detecting objects; it's about understanding the scene. Google's Gemini model analyzes the identified objects and their spatial relationships, generating rich, descriptive narratives that paint a picture of the environment.
 
-## Features
+- 🎧 **Spatial Audio Immersion**: To translate this 3D information into an intuitive experience, we use Head-Related Transfer Functions (HRTF) to create directional beeps. These beeps provide a spatial audio landscape, allowing the user to pinpoint the location of objects with remarkable accuracy. The closer the object, the louder the beep, and the direction of the beep matches its position in the real world.
 
-- 3D Object Detection:
-    - Uses [YOLOv11 (Ultralytics)](https://github.com/ultralytics/ultralytics) for real-time object detection.
+- 🗣️ **Real-Time Narration**: Finally, our system uses advanced Text-to-Speech (TTS) to deliver real-time verbal descriptions of the scene, reinforcing the spatial audio cues and providing a comprehensive understanding of the environment.
 
-- Depth Estimation:
-    - Employs [DepthAnythingV2](https://github.com/DepthAnything/Depth-Anything-V2) for monocular depth estimation to map objects in a 3D space.
+## How We Built It:
 
-- Scene Description:
-    - Utilizes [Google Gemini](https://deepmind.google/technologies/gemini/) to generate contextual scene descriptions.
+Our project leverages a distributed architecture. A laptop handles the computationally intensive tasks of object detection, depth estimation, and TTS. A Raspberry Pi running QNX is used for modal control, enabling the use of Gemini to describe scenes, toggling spatial audio cues, and turning the device off. The laptop is then responsible for determining where the closest objects to the user are and playing the spatial audio cues.
 
-- Spatial Audio with HRTF:
-    - Uses HRTF (Head-Related Transfer Function) to simulate 3D audio positioning.
+## Challenges and Triumphs:
 
-- Text-to-Speech (TTS):
-    - Converts scene descriptions into natural speech using [Google Cloud TTS](https://cloud.google.com/text-to-speech).
-    - Provides real-time audio descriptions of the environment.
+- 🤯 **Libraries with No Clue**: We wanted spatial audio, so we started with basic panning and volume tricks. Didn't cut it. We dug into 3D Audio HRTF Processing to make sounds feel real, but the libraries were a mess – zero docs, and no example code anyone could use. Even ChatGPT was stumped! We finally figured it out by just grinding through it.
 
-- Remote Control:
-    - Raspberry Pi with [QNX](https://blackberry.qnx.com/en/products/foundation-software/qnx-software-development-platform) sends control signals to the MacBook using socket communication.
-    - MacBook handles real-time camera input and processing.
+- 🤕 **More Documentation Headaches**: Adding speech with Google's Text-to-Speech was rough. Their documentation felt like it was written for experts. We spent ages fighting with authentication, API stuff, and figuring out how to make it work. Lots of trial and error (and Googling) later, we finally got it.
 
-## How It Works
+- 🧵 **We Need More Threads!**: When trying to play both spatial audio cues and Gemini's text-to-speech descriptions in the same loop, we came across a _lot_ of issues with segmentation faults and threading errors. Having never worked with multithreading before, we spent a significant amount of time trying to resolve this issue, mostly to no avail. Finally, we were able to architect a solution involving two separate audio queues and a mutual exclusion lock.
 
-1. **MacBook captures camera input** – The MacBook’s camera captures a live video feed.
-2. **YOLOv11 identifies objects** – YOLOv11 detects and classifies objects.
-3. **DepthAnythingV2 estimates depth** – Generates a 3D depth map of the scene.
-4. **Google Gemini provides scene descriptions** – Generates a detailed, natural language summary of the scene.
-5. **Spatial audio feedback with HRTF** – A directional beep is played based on the position of the nearest objects.
-6. **Text-to-Speech (TTS)** – Scene descriptions are converted to speech and played through headphones.
+## What's Next:
 
-## Team
+- 🌍 Our vision for Sixth-Sense extends beyond the current prototype. We plan to expand TTS support to multiple languages, making the technology accessible to a global audience.
 
-- [Ryan Zhu](https://github.com/Juno9170) & [Patrick Yuan](https://github.com/holycactusjuice) - AI/ML Engineers
-- [Uros Petrovic](https://github.com/crooder1) & [Puneet Singh](https://github.com/punz1738) - Embedded Systems/Hardware
-
-## Experience the power of perception with Sixth Sense!
+- 📏 We realized very quickly that while DepthAnythingV2 is an incredible model and certainly has many super cool uses, the field of Monocular Depth Estimation, it doesn't currently excel in precision in its measurements. To take Sixth-Sense to the next level, we are looking to LIDAR as an alternative solution.
