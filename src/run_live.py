@@ -12,9 +12,7 @@ import threading
 import socket
 
 from ultralytics import YOLO
-from extract_depths_base import extract_depths
-from extract_objects import extract_objects
-from play_sound import *
+from play_sound import AudioSystem
 from play_tts import speak, tts_player
 
 from depth_anything_v2.dpt import DepthAnythingV2 as DepthAnythingV2Metric
@@ -34,11 +32,10 @@ N_CLOSEST_OBJECTS = 1
 RESIZE_FACTOR = 0.5
 YOLO_MODEL_NAME = 'yolo11n.pt'
 GEMINI_THROTTLE = 8 # 8s
-
+METRIC = True
 BOOP_THROTTLE = 3
 
-SOCKET_ENABLED = True
-METRIC = True
+SOCKET_ENABLED = False
 
 GEMINI_PROMPT = """
 You are a tool that is helping a blind person navigate their environment.
@@ -126,7 +123,7 @@ if __name__ == '__main__':
         print ('Got connection from', addr)
 
     
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
 
     fps_array = []
 

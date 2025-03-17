@@ -105,7 +105,7 @@ class AudioSystem:
                     else:
                         db_reduction = np.interp(depth, [0, 1], [DB_REDUCTION_MIN, DB_REDUCTION_MAX])
                     
-                    print(f"DB Reduction: {db_reduction}")
+                    # print(f"DB Reduction: {db_reduction}")
                     binaural = self._get_sound(yaw, pitch)
                     binaural = adjust_volume_db(binaural, db_reduction)
                     
