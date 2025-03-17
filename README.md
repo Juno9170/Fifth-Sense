@@ -1,4 +1,4 @@
-# Sixth-Sense
+# [Sixth-Sense]([url](https://devpost.com/software/sixth-sense-eczxnv))
 
 Bringing back not only the fifth, but also a sixth sense for the visually impaired. Powered by the bleeding edge in artificial intelligence and embedded systems, we aim to revolutionize accessibility.
 
